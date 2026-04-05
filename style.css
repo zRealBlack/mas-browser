@@ -20,8 +20,9 @@
   --text: #1a1a2e;
   --text2: #555;
   --text3: #999;
-  --accent: #8b5cf6;
-  --accent-soft: rgba(139, 92, 246, .12);
+  --accent: #c27e33;
+  --accent-soft: rgba(194, 126, 51, .12);
+
   --sidebar-bg: rgba(240, 240, 244, .65);
   --sidebar-text: var(--text);
   --topbar-bg: rgba(240, 240, 244, .72);
@@ -90,7 +91,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #6c5ce7 0%, #a78bfa 50%, #c084fc 100%);
+  background: linear-gradient(135deg, #8b4513 0%, #c27e33 50%, #d4a76a 100%);
+
 }
 
 #login-overlay.hidden {
@@ -650,16 +652,37 @@ body {
   background: rgba(255, 255, 255, .05)
 }
 
-.dl-progress-bar {
-  height: 100%;
-  background: var(--accent);
-  width: 0%;
-  transition: width .2s linear
+.dl-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
-.dl-progress-bar.pulsing {
-  animation: pulse 1.5s infinite
+.dl-actions button {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
 }
+
+.dl-actions button:hover {
+  background: var(--bg3);
+  border-color: var(--accent);
+}
+
+.dl-progress-bar.paused {
+  background: var(--text3);
+  opacity: 0.6;
+}
+
 
 @keyframes pulse {
   0% {
@@ -1991,4 +2014,82 @@ body {
     opacity: 1;
     transform: scale(1) translateY(0)
   }
+}
+
+/* ============================================================
+   THE HUB & MINIMIZE EFFECT
+   ============================================================ */
+#hub {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  background: var(--bg);
+}
+
+.hub-content {
+  text-align: center;
+}
+
+.hub-title {
+  font-size: 44px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--text), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hub-sub {
+  font-size: 15px;
+  color: var(--text2);
+  margin-bottom: 30px;
+}
+
+.hub-grid {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.hub-card {
+  width: 110px;
+  height: 110px;
+  background: var(--card);
+  border: 1.5px solid var(--card-border);
+  border-radius: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.hub-card:hover {
+  background: var(--bg2);
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+#main-col {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.6s, box-shadow 0.6s;
+  z-index: 5;
+  transform-origin: center right;
+}
+
+#main-col.minimized {
+  transform: scale(0.82) translateX(18%) rotateY(-6deg);
+  border-radius: 24px;
+  box-shadow: 0 60px 120px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
 }

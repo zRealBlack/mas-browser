@@ -211,10 +211,21 @@ app.whenReady().then(() => {
     const { shell } = require('electron');
     shell.openPath(filePath);
   });
-
   ipcMain.on('download-show-folder', (e, filePath) => {
     const { shell } = require('electron');
     shell.showItemInFolder(filePath);
+  });
+  ipcMain.on('download-pause', (e, id) => {
+    const dl = activeDownloads.get(id);
+    if (dl) dl.pause();
+  });
+  ipcMain.on('download-resume', (e, id) => {
+    const dl = activeDownloads.get(id);
+    if (dl) dl.resume();
+  });
+  ipcMain.on('download-cancel', (e, id) => {
+    const dl = activeDownloads.get(id);
+    if (dl) dl.cancel();
   });
 });
 

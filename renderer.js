@@ -317,36 +317,58 @@ function renderDownloads() {
 
 function renderDlItem(dl) {
   const progress = dl.totalBytes > 0 ? (dl.receivedBytes / dl.totalBytes) * 100 : 0;
-  const statusText = dl.state === 'completed' ? 'Completed' :
-    dl.state === 'progressing' ? `${Math.round(progress)}% • ${prettySize(dl.receivedBytes)} of ${prettySize(dl.totalBytes)}` :
-      dl.state.charAt(0).toUpperCase() + dl.state.slice(1);
+  const isDone = dl.state === 'completed';
+  const isPaused = dl.state === 'paused';
+  const isCanceled = dl.state === 'cancelled' || dl.state === 'interrupted';
+
+  let statusText = dl.state.charAt(0).toUpperCase() + dl.state.slice(1);
+  if (dl.state === 'progressing') statusText = `${Math.round(progress)}% • ${prettySize(dl.receivedBytes)} / ${prettySize(dl.totalBytes)}`;
 
   return `
-    <div class="dl-item" onclick="handleDlClick('${dl.id}')">
+    <div class="dl-item" data-id="${dl.id}">
       <div class="dl-item-main">
-        <div class="dl-info">
+        <div class="dl-info" onclick="handleDlClick('${dl.id}', 'folder')">
           <div class="dl-name">${esc(dl.fileName)}</div>
           <div class="dl-status">${statusText}</div>
         </div>
-        ${dl.state === 'completed' ? '<svg width="14" height="14" viewBox="0 0 15 15"><path d="M4 7.5L7 10.5L11 4.5" stroke="var(--teal)" stroke-width="2" fill="none"/></svg>' : ''}
+        <div class="dl-actions">
+          ${!isDone && !isCanceled ? `
+            ${isPaused ?
+        `<button title="Resume" onclick="handleDlClick('${dl.id}', 'resume')">▶</button>` :
+        `<button title="Pause" onclick="handleDlClick('${dl.id}', 'pause')">Ⅱ</button>`
+      }
+            <button title="Cancel" onclick="handleDlClick('${dl.id}', 'cancel')">✕</button>
+          ` : ''}
+          <button title="Show in Folder" onclick="handleDlClick('${dl.id}', 'folder')">
+            <svg width="14" height="14" viewBox="0 0 16 16"><path d="M1 3h5l2 2h7v9H1V3z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+        </div>
       </div>
-      ${dl.state === 'progressing' ? `
+      ${dl.state === 'progressing' || isPaused ? `
         <div class="dl-progress-container">
-          <div class="dl-progress-bar" style="width: ${progress}%"></div>
+          <div class="dl-progress-bar ${isPaused ? 'paused' : ''}" style="width: ${progress}%"></div>
         </div>
       ` : ''}
     </div>`;
 }
 
-window.handleDlClick = (id) => {
+window.handleDlClick = (id, action) => {
   const dl = downloads.find(d => d.id === id);
-  if (!dl || !dl.savePath) return;
-  if (dl.state === 'completed') {
+  if (!dl) return;
+
+  if (action === 'folder') {
+    if (dl.savePath) window.electronAPI.showDownloadInFolder(dl.savePath);
+  } else if (action === 'pause') {
+    window.electronAPI.pauseDownload(id);
+  } else if (action === 'resume') {
+    window.electronAPI.resumeDownload(id);
+  } else if (action === 'cancel') {
+    window.electronAPI.cancelDownload(id);
+  } else if (action === 'open' && dl.state === 'completed') {
     window.electronAPI.openDownload(dl.savePath);
-  } else {
-    window.electronAPI.showDownloadInFolder(dl.savePath);
   }
 };
+
 
 function prettySize(b) {
   if (b === 0) return '0 B';
@@ -609,10 +631,32 @@ document.addEventListener('keydown', e => {
   if (e.altKey && e.key === 'F4') { e.preventDefault(); window.electronAPI.close(); }
 });
 
-// ── Window Controls ───────────────────────────────────
-$('#btn-close').addEventListener('click', () => window.electronAPI.close());
-$('#btn-min').addEventListener('click', () => window.electronAPI.minimize());
+// ── Hub & Spatial UI ──────────────────────────────────
+let hubOpen = false;
+function toggleHub(v) {
+  hubOpen = (v !== undefined) ? v : !hubOpen;
+  const col = $('#main-col');
+  col.classList.toggle('minimized', hubOpen);
+  if (hubOpen) closeDownloads(); // Clean up overlay
+}
+
+$('#hub').addEventListener('click', () => toggleHub(false));
+$('#hub-btn-dl').addEventListener('click', () => { toggleHub(false); toggleDownloads(); });
+
+// ── Window/Tab Controls ───────────────────────────────
+$('#btn-close').addEventListener('click', () => { if (activeTabId) closeTab(activeTabId); });
+$('#btn-min').addEventListener('click', () => toggleHub(true));
 $('#btn-max').addEventListener('click', () => window.electronAPI.maximize());
+
+// ── New Tab Search FIX ────────────────────────────────
+document.addEventListener('keydown', e => {
+  const ntInput = document.getElementById('nt-search-input');
+  if (ntInput && document.activeElement === ntInput && e.key === 'Enter') {
+    const v = ntInput.value.trim();
+    if (v) navigateTab(activeTabId, v);
+  }
+});
+
 
 // ── OS Background Controls ────────────────────────────
 $('#os-btn-close').addEventListener('click', () => window.electronAPI.close());

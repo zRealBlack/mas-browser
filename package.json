@@ -1,7 +1,7 @@
 {
-  "name": "arc-browser",
-  "version": "1.0.2",
-  "description": "Arc Browser clone built with Electron.js",
+  "name": "mas-browser",
+  "version": "1.0.3",
+  "description": "MAS Browser — A modern, fast, and beautiful browser for everyone.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -38,7 +38,8 @@
     "publish": {
       "provider": "github",
       "owner": "zRealBlack",
-      "repo": "mas-browser"
+      "repo": "mas-browser",
+      "releaseType": "release"
     }
   }
 }

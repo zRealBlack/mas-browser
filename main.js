@@ -6,6 +6,7 @@ const { autoUpdater } = require('electron-updater');
 function createWindow(incognito = false) {
   const win = new BrowserWindow({
     width: 1280, height: 860, minWidth: 800, minHeight: 500,
+    title: 'MAS Browser', autoHideMenuBar: true,
     frame: false, backgroundColor: incognito ? '#0e0e0e' : '#f0f0f2',
     icon: path.join(__dirname, 'logo.png'),
     webPreferences: {
@@ -14,6 +15,13 @@ function createWindow(incognito = false) {
       nodeIntegration: false, contextIsolation: true,
     },
   });
+
+  // Handle links that request a new window by opening them in a new tab instead
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    win.webContents.send('new-tab-from-main', url);
+    return { action: 'deny' };
+  });
+
   win.loadFile('index.html');
   if (incognito) {
     win.webContents.on('did-finish-load', () => win.webContents.send('set-incognito', true));

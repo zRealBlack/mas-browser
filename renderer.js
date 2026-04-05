@@ -406,6 +406,8 @@ window.electronAPI.onUpdateError(err => {
   // Keep it quiet unless user manually checked
 });
 
+window.electronAPI.onNewTabFromMain(url => createTab(url));
+
 // ── Tab Management ────────────────────────────────────
 function getPartition() {
   if (isIncognito) return incognitoPartition;

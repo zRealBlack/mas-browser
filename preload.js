@@ -26,4 +26,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateDownloaded: cb => ipcRenderer.on('update-downloaded', (_, info) => cb(info)),
   onUpdateError: cb => ipcRenderer.on('update-error', (_, err) => cb(err)),
   installUpdate: () => ipcRenderer.send('update-restart'),
+  onNewTabFromMain: cb => ipcRenderer.on('new-tab-from-main', (_, url) => cb(url)),
 });

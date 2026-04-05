@@ -1,0 +1,44 @@
+{
+  "name": "arc-browser",
+  "version": "1.0.0",
+  "description": "Arc Browser clone built with Electron.js",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "publish": "electron-builder --win -p always"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "build": {
+    "appId": "com.mas.browser",
+    "productName": "MAS Browser",
+    "copyright": "Copyright © 2026 yasso",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "logo.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "MAS Browser"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "zRealBlack",
+      "repo": "mas-browser"
+    }
+  }
+}

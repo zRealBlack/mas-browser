@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light" data-accent="#e8e8ec">
+<head>
+  <meta charset="UTF-8">
+  <title>MAS Browser</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ========== APP LAYOUT ========== -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="sb-profile" style="justify-content: center; padding: 22px 16px 16px;">
+      <img src="logo.png" style="width: 54px; height: 54px; border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" alt="MAS Browser">
+    </div>
+    <div class="sb-section">
+      <div class="sb-hdr" data-collapse="pinned">
+        <svg class="chev" width="10" height="10" viewBox="0 0 10 10"><path d="M3 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Pinned Tabs</span>
+      </div>
+      <div class="sb-group" id="pinned-tabs"></div>
+    </div>
+    <div class="sb-section sb-grow">
+      <div class="sb-hdr" data-collapse="tabs">
+        <svg class="chev" width="10" height="10" viewBox="0 0 10 10"><path d="M3 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Tabs</span>
+        <span class="sb-count" id="tab-count">0</span>
+      </div>
+      <div class="sb-group" id="tab-list"></div>
+    </div>
+    <div class="sb-footer">
+      <button class="sf-btn" id="btn-new-tab" title="New Tab (Ctrl+T)">
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <button class="sf-btn" id="btn-settings" title="Settings (Ctrl+,)">
+        <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- OS CONTROLS (Background) -->
+  <div id="os-controls">
+    <button class="os-btn os-min" id="os-btn-min" title="Minimize Application">
+      <svg width="8" height="8" viewBox="0 0 10 10"><path d="M1 5h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <button class="os-btn os-max" id="os-btn-max" title="Maximize Application">
+      <svg width="8" height="8" viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+    <button class="os-btn os-close" id="os-btn-close" title="Close Application">
+      <svg width="8" height="8" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <!-- MAIN COLUMN -->
+  <div id="main-col">
+    <!-- ========== TOP BAR ========== -->
+    <header id="topbar">
+      <div class="tb-left">
+        <button class="tb-btn" id="btn-mas" title="Menu">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <button class="tb-btn" id="btn-sb-toggle" title="Toggle Sidebar">
+          <svg width="16" height="16" viewBox="0 0 16 16"><rect x="1" y="2" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 2v12" stroke="currentColor" stroke-width="1.3"/></svg>
+        </button>
+        <button class="tb-btn" id="btn-back" disabled title="Back">
+          <svg width="16" height="16" viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="tb-btn" id="btn-fwd" disabled title="Forward">
+          <svg width="16" height="16" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="tb-btn" id="btn-reload" title="Reload">
+          <svg width="16" height="16" viewBox="0 0 16 16"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13.5 3v3.5H10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="tb-center">
+        <div class="tb-url" id="url-bar" title="Ctrl+L">
+          <svg class="url-link-icon" width="14" height="14" viewBox="0 0 14 14"><path d="M6 8a3 3 0 0 0 4.24.01l2-2A3 3 0 0 0 7.76 1.77l-1.15 1.15" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M8 6a3 3 0 0 0-4.24-.01l-2 2A3 3 0 0 0 6.24 12.23l1.14-1.15" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          <span id="url-text">Search or Enter URL...</span>
+          <button class="tb-url-action" id="btn-copy-link" title="Copy Link (Ctrl+Shift+C)">
+            <svg width="14" height="14" viewBox="0 0 14 14"><rect x="4" y="4" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M10 4V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v5.5A1.5 1.5 0 0 0 3 10h1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+          <button class="tb-url-action" id="btn-site-info" title="Site Info">
+            <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 5h8M3 7h8M3 9h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="11" cy="5" r=".5" fill="currentColor"/><circle cx="11" cy="7" r=".5" fill="currentColor"/><circle cx="11" cy="9" r=".5" fill="currentColor"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="tb-right">
+        <button class="tb-btn wc" id="btn-min" title="Minimize">
+          <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </button>
+        <button class="tb-btn wc" id="btn-max" title="Maximize">
+          <svg width="12" height="12" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+        <button class="tb-btn wc wc-close" id="btn-close" title="Close">
+          <svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- SITE INFO DROPDOWN -->
+    <div id="site-info-panel" class="hidden">
+      <button class="si-share-btn" id="btn-share-url">
+        <svg width="15" height="15" viewBox="0 0 15 15"><path d="M4 8v4a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V8M7.5 2v7M5 4.5L7.5 2 10 4.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Share URL
+      </button>
+      <div class="si-sep"></div>
+      <div class="si-section-label">Extensions</div>
+      <div class="si-ext-row">
+        <div class="si-ext-placeholder"></div>
+        <button class="si-ext-add" id="btn-add-ext" title="Add Extension">+</button>
+      </div>
+      <div class="si-sep"></div>
+      <div class="si-toggle-row">
+        <span>Automatic Picture-In-Picture</span>
+        <label class="toggle sm"><input type="checkbox" id="toggle-pip"><span class="toggle-track"><span class="toggle-thumb"></span></span></label>
+      </div>
+      <div class="si-sep"></div>
+      <div class="si-secure-row">
+        <svg width="14" height="14" viewBox="0 0 14 14"><rect x="3" y="6" width="8" height="6" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M5 6V4.5a2 2 0 0 1 4 0V6" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <span class="si-secure-text">Secure</span>
+        <button class="si-more-btn" id="btn-si-more" title="More">•••</button>
+      </div>
+      <!-- Sub-menu for site settings -->
+      <div id="si-more-menu" class="hidden">
+        <div class="si-mi" id="si-clear-cache">Clear Cache</div>
+        <div class="si-mi" id="si-clear-cookies">Clear Cookies</div>
+        <div class="si-mi" id="si-manage-ext">Manage Extensions</div>
+        <div class="si-mi" id="si-add-ext">Add Extension</div>
+        <div class="si-mi" id="si-all-settings">All Site Settings</div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="content">
+      <div id="webview-wrap">
+        <div id="newtab-page" class="active">
+          <div class="nt-inner">
+            <h1 class="nt-logo">MAS</h1>
+            <p class="nt-sub">Press <kbd>Ctrl+L</kbd> to start browsing</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== COMMAND BAR ========== -->
+<div id="cmd-overlay" class="hidden">
+  <div id="cmd-backdrop"></div>
+  <div id="cmd-bar">
+    <div class="cmd-wrap">
+      <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="cmd-input" placeholder="Search or Enter URL..." spellcheck="false" autocomplete="off">
+    </div>
+    <div id="cmd-sugs"></div>
+  </div>
+</div>
+
+<!-- ========== SETTINGS PANEL ========== -->
+<div id="settings-overlay" class="hidden">
+  <div id="settings-backdrop"></div>
+  <div id="settings-panel">
+    <button id="settings-close" title="Close">&times;</button>
+    <div class="st-scroll">
+      <!-- Profiles -->
+      <h2 class="st-title">Profiles</h2>
+      <p class="st-desc">Profiles help keep your data separate across Spaces — like history, logins, cookies, and extensions. You can use a profile across one or more Spaces. <a href="#" class="st-link">Learn More</a></p>
+      <div class="st-card st-row">
+        <span>Add a new Profile</span>
+        <button class="st-btn-teal" id="btn-new-profile">New Profile</button>
+      </div>
+      <div id="profile-list"></div>
+
+      <!-- MAS Sync -->
+      <h2 class="st-title">MAS Sync</h2>
+      <p class="st-desc">MAS Sync is end-to-end encrypted, only you can see your data. <a href="#" class="st-link">Learn more</a></p>
+      <div class="st-card st-row st-sync-row">
+        <svg class="st-sync-icon" width="24" height="24" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14.93-4M20 12a8 8 0 0 1-14.93 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M20 4v4h-4M4 20v-4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="st-sync-info">
+          <div>Sidebar Sync</div>
+          <div class="st-muted" id="sync-status-text">Sync disabled</div>
+        </div>
+        <span class="st-sync-lbl" id="sync-lbl">Off</span>
+        <label class="toggle"><input type="checkbox" id="toggle-sync"><span class="toggle-track"><span class="toggle-thumb"></span></span></label>
+      </div>
+
+      <!-- Theme -->
+      <h2 class="st-title">Theme</h2>
+      <div class="st-card st-theme-card">
+        <div class="theme-toggle-row">
+          <span class="theme-icon">☀️</span>
+          <label class="theme-switch"><input type="checkbox" id="toggle-dark"><span class="theme-track"><span class="theme-thumb"></span></span></label>
+          <span class="theme-icon">🌙</span>
+        </div>
+        <div class="theme-swatches" id="theme-swatches"></div>
+      </div>
+
+      <!-- General -->
+      <h2 class="st-title">General</h2>
+      <div class="st-card st-row">
+        <span>Window backdrop</span>
+        <select id="sel-backdrop" class="st-select"><option value="none">None</option><option value="blur">Blur</option><option value="transparent">Transparent</option></select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== APP MENU ========== -->
+<div id="app-menu" class="hidden">
+  <div class="mi" id="mi-default"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 3C5.5 3 3 5.5 5 8s-2 5 3 5 5-2.5 3-5 2-5-3-5z" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span>Set MAS as Default Browser</span></div>
+  <div class="mi" id="mi-updates"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 2v6l3 3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span>Check for Updates</span></div>
+  <div class="mi" id="mi-import"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 2v8M5 7l3 3 3-3M3 12h10" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Import from Another Browser</span></div>
+  <div class="mi-sep"></div>
+  <div class="mi" id="mi-newtab"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>New Tab</span><span class="mi-key">Ctrl+T</span></div>
+  <div class="mi" id="mi-newwin"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span>New Window</span><span class="mi-key">Ctrl+N</span></div>
+  <div class="mi" id="mi-incognito"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="5.5" cy="10" r="2" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="10.5" cy="10" r="2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M2 8h12M7.5 10h1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg><span>New Incognito Window</span><span class="mi-key">Ctrl+Shift+N</span></div>
+  <div class="mi-sep"></div>
+  <div class="mi mi-sub"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="2" width="5" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="2" y="9" width="5" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><span>Spaces</span><span class="mi-arrow">›</span></div>
+  <div class="mi mi-sub"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span>Tabs</span><span class="mi-arrow">›</span></div>
+  <div class="mi mi-sub"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M10.5 2.5L8 5l2.5 2.5M5.5 8L8 5.5 5.5 3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="2" y="2" width="12" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><span>Extensions</span><span class="mi-arrow">›</span></div>
+  <div class="mi mi-sub"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M5 3c-1 0-2 1-2 2s1 2 2 2h0c-1 0-2 1-2 2s1 2 2 2M11 3c1 0 2 1 2 2s-1 2-2 2h0c1 0 2 1 2 2s-1 2-2 2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span>Developer</span><span class="mi-arrow">›</span></div>
+  <div class="mi mi-sub"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 6.5a2 2 0 0 1 3.5 1.5c0 1-1.5 1-1.5 2M8 12v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg><span>Help</span><span class="mi-arrow">›</span></div>
+  <div class="mi-sep"></div>
+  <div class="mi" id="mi-settings"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg><span>Settings</span><span class="mi-key">Ctrl+,</span></div>
+  <div class="mi" id="mi-print"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M4 5V2h8v3M4 11H2V7h12v4h-2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><rect x="4" y="9" width="8" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><span>Print</span><span class="mi-key">Ctrl+P</span></div>
+  <div class="mi" id="mi-close-app"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span>Close</span><span class="mi-key">Alt+F4</span></div>
+  <div class="mi-sep"></div>
+  <div class="mi" id="mi-signout"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M6 2H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2M10 11l3-3-3-3M6 8h7" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Sign Out</span></div>
+</div>
+
+<script src="renderer.js"></script>
+</body>
+</html>

@@ -4,16 +4,16 @@
 
 // ── Constants ─────────────────────────────────────────
 const SWATCHES = [
-  {name:'Default',light:'#e8e8ec',dark:'#1a1a1a'},
-  {name:'Rose',light:'#f5d5d5',dark:'#2a1a1a'},
-  {name:'Pink',light:'#f0c4d4',dark:'#2a1318'},
-  {name:'Mauve',light:'#e4cef0',dark:'#201520'},
-  {name:'Purple',light:'#d5ccf0',dark:'#1a1520'},
-  {name:'Blue',light:'#c8dbf0',dark:'#141a24'},
-  {name:'Teal',light:'#c4e8e0',dark:'#141e1a'},
-  {name:'Green',light:'#d0e8c8',dark:'#161e14'},
-  {name:'Peach',light:'#f0dcc4',dark:'#201a12'},
-  {name:'Sand',light:'#f0e4c8',dark:'#1e1a12'},
+  { name: 'Default', light: '#e8e8ec', dark: '#1a1a1a' },
+  { name: 'Rose', light: '#f5d5d5', dark: '#2a1a1a' },
+  { name: 'Pink', light: '#f0c4d4', dark: '#2a1318' },
+  { name: 'Mauve', light: '#e4cef0', dark: '#201520' },
+  { name: 'Purple', light: '#d5ccf0', dark: '#1a1520' },
+  { name: 'Blue', light: '#c8dbf0', dark: '#141a24' },
+  { name: 'Teal', light: '#c4e8e0', dark: '#141e1a' },
+  { name: 'Green', light: '#d0e8c8', dark: '#161e14' },
+  { name: 'Peach', light: '#f0dcc4', dark: '#201a12' },
+  { name: 'Sand', light: '#f0e4c8', dark: '#1e1a12' },
 ];
 
 // ── State ─────────────────────────────────────────────
@@ -26,7 +26,8 @@ let isIncognito = false;
 const incognitoPartition = 'incognito-' + Date.now();
 
 let tabs = [], activeTabId = null, sidebarOpen = true, tabIdCounter = 0;
-let menuOpen = false, siteInfoOpen = false, siMoreOpen = false;
+let menuOpen = false, siteInfoOpen = false, siMoreOpen = false, downloadsOpen = false;
+let downloads = JSON.parse(localStorage.getItem('mas-downloads') || '[]');
 
 // ── DOM refs ──────────────────────────────────────────
 const $ = s => document.querySelector(s);
@@ -48,15 +49,19 @@ const urlText = $('#url-text');
 const btnBack = $('#btn-back');
 const btnFwd = $('#btn-fwd');
 const btnReload = $('#btn-reload');
+const downloadsPanel = $('#downloads-panel');
+const dlListEl = $('#dl-list');
+const btnDl = $('#btn-downloads');
+const dlOverlay = $('#downloads-overlay');
 
 // ── Helpers ───────────────────────────────────────────
 function genId() { return `t${++tabIdCounter}`; }
-function domainLetter(url) { try { return new URL(url).hostname.replace('www.','').charAt(0).toUpperCase(); } catch { return '?'; } }
-function prettyUrl(url) { try { const u = new URL(url); let d = u.hostname.replace('www.',''); if (u.pathname !== '/') d += u.pathname; return d.length > 55 ? d.slice(0,53)+'…' : d; } catch { return url; } }
+function domainLetter(url) { try { return new URL(url).hostname.replace('www.', '').charAt(0).toUpperCase(); } catch { return '?'; } }
+function prettyUrl(url) { try { const u = new URL(url); let d = u.hostname.replace('www.', ''); if (u.pathname !== '/') d += u.pathname; return d.length > 55 ? d.slice(0, 53) + '…' : d; } catch { return url; } }
 function isUrlLike(s) { return /^https?:\/\//i.test(s) || (/^[\w-]+(\.[\w-]+)+/.test(s) && !/\s/.test(s)); }
-function toUrl(s) { s = s.trim(); if (/^https?:\/\//i.test(s)) return s; if (isUrlLike(s)) return 'https://'+s; return 'https://www.google.com/search?q='+encodeURIComponent(s); }
+function toUrl(s) { s = s.trim(); if (/^https?:\/\//i.test(s)) return s; if (isUrlLike(s)) return 'https://' + s; return 'https://www.google.com/search?q=' + encodeURIComponent(s); }
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-function save(k,v) { localStorage.setItem(k, JSON.stringify(v)); }
+function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
 
 // ── Theme System ──────────────────────────────────────
 function applyTheme() {
@@ -255,7 +260,121 @@ $('#toggle-pip').checked = settings.pip || false;
 document.addEventListener('click', e => {
   if (menuOpen && !appMenu.contains(e.target) && e.target.id !== 'btn-mas') closeMenu();
   if (siteInfoOpen && !siteInfoPanel.contains(e.target) && e.target.id !== 'btn-site-info' && !e.target.closest('#btn-site-info')) closeSiteInfo();
+  if (downloadsOpen && !downloadsPanel.contains(e.target) && e.target.id !== 'btn-downloads' && !e.target.closest('#btn-downloads')) closeDownloads();
 });
+
+// ── Downloads Management ──────────────────────────────
+function toggleDownloads() {
+  downloadsOpen = !downloadsOpen;
+  downloadsPanel.classList.toggle('hidden', !downloadsOpen);
+  if (downloadsOpen) { closeMenu(); closeSiteInfo(); renderDownloads(); }
+}
+
+function closeDownloads() {
+  downloadsOpen = false;
+  downloadsPanel.classList.add('hidden');
+}
+
+function updateDownload(data) {
+  let dl = downloads.find(d => d.id === data.id);
+  if (!dl) {
+    dl = { id: data.id, fileName: data.fileName, state: 'progressing', receivedBytes: 0, totalBytes: data.totalBytes };
+    downloads.unshift(dl);
+    showDownloadsButton(true);
+  }
+
+  if (data.state) dl.state = data.state;
+  if (data.receivedBytes !== undefined) dl.receivedBytes = data.receivedBytes;
+  if (data.totalBytes !== undefined) dl.totalBytes = data.totalBytes;
+  if (data.savePath !== undefined) dl.savePath = data.savePath;
+
+  save('mas-downloads', downloads);
+  renderDownloads();
+  checkActiveDownloads();
+}
+
+function checkActiveDownloads() {
+  const active = downloads.some(d => d.state === 'progressing');
+  btnDl.classList.toggle('active', active);
+}
+
+function showDownloadsButton(show) {
+  btnDl.style.display = show ? 'flex' : 'none';
+}
+
+function renderDownloads() {
+  const html = downloads.slice(0, 10).map(dl => renderDlItem(dl)).join('');
+  dlListEl.innerHTML = html || '<div class="cmd-hint">No recent downloads</div>';
+
+  // Update overlay if open
+  if (!dlOverlay.classList.contains('hidden')) {
+    $('#dl-full-list').innerHTML = downloads.map(dl => renderDlItem(dl)).join('');
+  }
+}
+
+function renderDlItem(dl) {
+  const progress = dl.totalBytes > 0 ? (dl.receivedBytes / dl.totalBytes) * 100 : 0;
+  const statusText = dl.state === 'completed' ? 'Completed' :
+    dl.state === 'progressing' ? `${Math.round(progress)}% • ${prettySize(dl.receivedBytes)} of ${prettySize(dl.totalBytes)}` :
+      dl.state.charAt(0).toUpperCase() + dl.state.slice(1);
+
+  return `
+    <div class="dl-item" onclick="handleDlClick('${dl.id}')">
+      <div class="dl-item-main">
+        <div class="dl-info">
+          <div class="dl-name">${esc(dl.fileName)}</div>
+          <div class="dl-status">${statusText}</div>
+        </div>
+        ${dl.state === 'completed' ? '<svg width="14" height="14" viewBox="0 0 15 15"><path d="M4 7.5L7 10.5L11 4.5" stroke="var(--teal)" stroke-width="2" fill="none"/></svg>' : ''}
+      </div>
+      ${dl.state === 'progressing' ? `
+        <div class="dl-progress-container">
+          <div class="dl-progress-bar" style="width: ${progress}%"></div>
+        </div>
+      ` : ''}
+    </div>`;
+}
+
+window.handleDlClick = (id) => {
+  const dl = downloads.find(d => d.id === id);
+  if (!dl || !dl.savePath) return;
+  if (dl.state === 'completed') {
+    window.electronAPI.openDownload(dl.savePath);
+  } else {
+    window.electronAPI.showDownloadInFolder(dl.savePath);
+  }
+};
+
+function prettySize(b) {
+  if (b === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(b) / Math.log(k));
+  return parseFloat((b / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+btnDl.addEventListener('click', e => { e.stopPropagation(); toggleDownloads(); });
+$('#btn-clear-dl').addEventListener('click', () => { downloads = []; save('mas-downloads', downloads); renderDownloads(); showDownloadsButton(false); });
+
+$('#btn-show-all-dl').addEventListener('click', () => {
+  dlOverlay.classList.remove('hidden');
+  renderDownloads();
+  closeDownloads();
+});
+
+$('#dl-overlay-close').addEventListener('click', () => dlOverlay.classList.add('hidden'));
+$('#dl-overlay-backdrop').addEventListener('click', () => dlOverlay.classList.add('hidden'));
+
+// Listen for download events from main process
+window.electronAPI.onDownloadStarted(data => {
+  updateDownload(data);
+  if (!downloadsOpen) toggleDownloads();
+});
+window.electronAPI.onDownloadUpdated(data => updateDownload(data));
+window.electronAPI.onDownloadDone(data => updateDownload(data));
+
+// Initial check for button visibility
+if (downloads.length > 0) showDownloadsButton(true);
 
 // ── Tab Management ────────────────────────────────────
 function getPartition() {
@@ -266,7 +385,7 @@ function getPartition() {
 function createTab(url, opts = {}) {
   const id = genId();
   const { pinned = false, activate = true } = opts;
-  const tab = { id, url: url||'', title: 'New Tab', favicon: null, pinned, loading: false };
+  const tab = { id, url: url || '', title: 'New Tab', favicon: null, pinned, loading: false };
   tabs.push(tab);
 
   if (url) {
@@ -289,22 +408,22 @@ function switchTab(id) {
   const tab = tabs.find(t => t.id === id);
   if (!tab) return;
   $('#main-col').style.display = 'flex';
-  
+
   webviewWrap.querySelectorAll('webview.active').forEach(w => w.classList.remove('active'));
   document.querySelectorAll('.tab-item.active').forEach(el => el.classList.remove('active'));
-  
+
   activeTabId = id;
   let wv = document.getElementById(`wv-${id}`);
-  if (wv) { 
-    wv.classList.add('active'); 
-    newtabPage.classList.remove('active'); 
-  } else { 
-    newtabPage.classList.add('active'); 
+  if (wv) {
+    wv.classList.add('active');
+    newtabPage.classList.remove('active');
+  } else {
+    newtabPage.classList.add('active');
   }
-  
+
   const el = document.querySelector(`.tab-item[data-id="${id}"]`);
   if (el) { el.classList.add('active'); el.classList.remove('unread'); }
-  
+
   updateUrlBar(tab);
   updateNav();
 }
@@ -316,9 +435,9 @@ function closeTab(id) {
   const el = document.querySelector(`.tab-item[data-id="${id}"]`); if (el) el.remove();
   tabs.splice(idx, 1);
   updateCount();
-  
+
   if (tabs.length === 0) { createTab(''); return; }
-  if (activeTabId === id) switchTab(tabs[Math.min(idx, tabs.length-1)].id);
+  if (activeTabId === id) switchTab(tabs[Math.min(idx, tabs.length - 1)].id);
 }
 
 function navigateTab(id, input) {
@@ -327,7 +446,7 @@ function navigateTab(id, input) {
   const url = toUrl(input);
   tab.url = url;
   let wv = document.getElementById(`wv-${id}`);
-  
+
   if (!wv) {
     wv = document.createElement('webview');
     wv.id = `wv-${id}`;
@@ -384,7 +503,7 @@ function renderTabEl(tab) {
   el.innerHTML = `
     <div class="tab-dot"></div><div class="tab-spinner"></div>
     ${tab.favicon ? `<img class="tab-fav" src="${tab.favicon}" draggable="false" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : `<img class="tab-fav" style="display:none" draggable="false">`}
-    <div class="tab-fav-letter" ${tab.favicon?'style="display:none"':''}>${domainLetter(tab.url||'about:blank')}</div>
+    <div class="tab-fav-letter" ${tab.favicon ? 'style="display:none"' : ''}>${domainLetter(tab.url || 'about:blank')}</div>
     <span class="tab-title">${esc(tab.title)}</span>
     <button class="tab-close" title="Close"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>`;
   el.addEventListener('click', () => switchTab(tab.id));
@@ -400,7 +519,7 @@ function updateNav() {
   if (!activeTabId) return;
   const wv = document.getElementById(`wv-${activeTabId}`);
   if (!wv) { btnBack.disabled = true; btnFwd.disabled = true; return; }
-  try { btnBack.disabled = !wv.canGoBack(); btnFwd.disabled = !wv.canGoForward(); } catch {}
+  try { btnBack.disabled = !wv.canGoBack(); btnFwd.disabled = !wv.canGoForward(); } catch { }
 }
 
 // ── Top Bar Delegation ────────────────────────────────
@@ -429,10 +548,10 @@ function renderSugs(q) {
   if (!items.length && !q) { cmdSugs.innerHTML = '<div class="cmd-hint">Type a URL or search term…</div>'; return; }
   if (!items.length) { cmdSugs.innerHTML = ''; return; }
   cmdSugs.innerHTML = items.map((t, i) => `
-    <div class="sug-item${i===0?' active':''}" data-id="${t.id}">
+    <div class="sug-item${i === 0 ? ' active' : ''}" data-id="${t.id}">
       ${t.favicon ? `<img class="sug-fav" src="${t.favicon}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : `<img class="sug-fav" style="display:none">`}
-      <div class="sug-fav-letter" ${t.favicon?'style="display:none"':''}>${domainLetter(t.url||'')}</div>
-      <div class="sug-body"><span class="sug-title">${esc(t.title)}</span><span class="sug-url">${esc(t.url||'')}</span></div>
+      <div class="sug-fav-letter" ${t.favicon ? 'style="display:none"' : ''}>${domainLetter(t.url || '')}</div>
+      <div class="sug-body"><span class="sug-title">${esc(t.title)}</span><span class="sug-url">${esc(t.url || '')}</span></div>
       <span class="sug-action">Switch to Tab →</span>
     </div>`).join('');
   cmdSugs.querySelectorAll('.sug-item').forEach(el => el.addEventListener('click', () => { switchTab(el.dataset.id); closeCmd(); }));
@@ -452,7 +571,7 @@ document.addEventListener('keydown', e => {
   if (e.ctrlKey && e.key === 'w') { e.preventDefault(); if (activeTabId) closeTab(activeTabId); }
   if (e.ctrlKey && e.key === 'n') { e.preventDefault(); if (e.shiftKey) window.electronAPI.newIncognito(); else window.electronAPI.newWindow(); }
   if (e.ctrlKey && e.key === ',') { e.preventDefault(); openSettings(); }
-  if (e.ctrlKey && e.key === 'p') { e.preventDefault(); const wv=document.getElementById(`wv-${activeTabId}`); if(wv)wv.print(); }
+  if (e.ctrlKey && e.key === 'p') { e.preventDefault(); const wv = document.getElementById(`wv-${activeTabId}`); if (wv) wv.print(); }
   if (e.ctrlKey && e.shiftKey && e.key === 'C') { e.preventDefault(); copyCurrentUrl(); }
   if (e.altKey && e.key === 'F4') { e.preventDefault(); window.electronAPI.close(); }
 });

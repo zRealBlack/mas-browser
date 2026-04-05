@@ -75,7 +75,7 @@ app.whenReady().then(() => {
           if (data.roots) Object.values(data.roots).forEach(r => { if (typeof r === 'object') extract(r); });
           if (result.bookmarks.length > 0) break;
         }
-      } catch {}
+      } catch { }
     }
     return result;
   });
@@ -86,6 +86,61 @@ app.whenReady().then(() => {
   });
 
   session.defaultSession.setPermissionRequestHandler((_, __, cb) => cb(true));
+
+  // --- DOWNLOAD MANAGEMENT ---
+  const activeDownloads = new Map();
+
+  session.defaultSession.on('will-download', (event, item, webContents) => {
+    const id = Date.now().toString();
+    const fileName = item.getFilename();
+    const totalBytes = item.getTotalBytes();
+
+    activeDownloads.set(id, item);
+
+    // Initial notification
+    webContents.send('download-started', {
+      id,
+      fileName,
+      totalBytes,
+      savePath: item.getSavePath()
+    });
+
+    item.on('updated', (event, state) => {
+      if (state === 'interrupted') {
+        webContents.send('download-updated', { id, state: 'interrupted' });
+      } else if (state === 'progressing') {
+        if (item.isPaused()) {
+          webContents.send('download-updated', { id, state: 'paused' });
+        } else {
+          webContents.send('download-updated', {
+            id,
+            state: 'progressing',
+            receivedBytes: item.getReceivedBytes(),
+            totalBytes: item.getTotalBytes()
+          });
+        }
+      }
+    });
+
+    item.once('done', (event, state) => {
+      activeDownloads.delete(id);
+      webContents.send('download-done', {
+        id,
+        state,
+        savePath: item.getSavePath()
+      });
+    });
+  });
+
+  ipcMain.on('download-open', (e, filePath) => {
+    const { shell } = require('electron');
+    shell.openPath(filePath);
+  });
+
+  ipcMain.on('download-show-folder', (e, filePath) => {
+    const { shell } = require('electron');
+    shell.showItemInFolder(filePath);
+  });
 });
 
 app.on('window-all-closed', () => app.quit());

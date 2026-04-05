@@ -14,4 +14,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setDefault: () => ipcRenderer.send('set-default'),
   checkUpdates: () => ipcRenderer.send('check-updates'),
   onSetIncognito: cb => ipcRenderer.on('set-incognito', (_, v) => cb(v)),
+  // Download Handlers
+  onDownloadStarted: cb => ipcRenderer.on('download-started', (_, data) => cb(data)),
+  onDownloadUpdated: cb => ipcRenderer.on('download-updated', (_, data) => cb(data)),
+  onDownloadDone: cb => ipcRenderer.on('download-done', (_, data) => cb(data)),
+  openDownload: filePath => ipcRenderer.send('download-open', filePath),
+  showDownloadInFolder: filePath => ipcRenderer.send('download-show-folder', filePath),
 });

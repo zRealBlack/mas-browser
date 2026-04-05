@@ -30,11 +30,15 @@ function createWindow(incognito = false) {
   }
   win.on('maximize', () => win.webContents.send('win-state', true));
   win.on('unmaximize', () => win.webContents.send('win-state', false));
+  ipcMain.on('view-source', (e, url) => {
+    const mainWin = BrowserWindow.getAllWindows()[0];
+    if (mainWin) mainWin.webContents.send('new-tab-from-main', 'view-source:' + url);
+  });
   return win;
 }
 
 
-// Ensure ALL webviews and windows open in tabs
+// Ensure ALL webviews and windows open in tabs + context menu
 app.on('web-contents-created', (event, contents) => {
   contents.setWindowOpenHandler(({ url }) => {
     const wins = BrowserWindow.getAllWindows();
@@ -42,6 +46,19 @@ app.on('web-contents-created', (event, contents) => {
       wins[0].webContents.send('new-tab-from-main', url);
     }
     return { action: 'deny' };
+  });
+
+  // Relay context menu data to renderer
+  contents.on('context-menu', (event, params) => {
+    const wins = BrowserWindow.getAllWindows();
+    if (wins.length > 0) {
+      wins[0].webContents.send('ctx-webview-menu', {
+        x: params.x, y: params.y,
+        canGoBack: contents.canGoBack(),
+        canGoForward: contents.canGoForward(),
+        url: params.pageURL
+      });
+    }
   });
 });
 
@@ -145,19 +162,23 @@ app.whenReady().then(() => {
       const totalBytes = item.getTotalBytes();
       activeDownloads.set(id, item);
 
-      webContents.send('download-started', {
-        id, fileName, totalBytes,
-        savePath: item.getSavePath()
-      });
+      const mainWin = BrowserWindow.getAllWindows()[0];
+      if (mainWin) {
+        mainWin.webContents.send('download-started', {
+          id, fileName, totalBytes,
+          savePath: item.getSavePath()
+        });
+      }
 
       item.on('updated', (event, state) => {
+        if (!mainWin) return;
         if (state === 'interrupted') {
-          webContents.send('download-updated', { id, state: 'interrupted' });
+          mainWin.webContents.send('download-updated', { id, state: 'interrupted' });
         } else if (state === 'progressing') {
           if (item.isPaused()) {
-            webContents.send('download-updated', { id, state: 'paused' });
+            mainWin.webContents.send('download-updated', { id, state: 'paused' });
           } else {
-            webContents.send('download-updated', {
+            mainWin.webContents.send('download-updated', {
               id, state: 'progressing',
               receivedBytes: item.getReceivedBytes(),
               totalBytes: item.getTotalBytes()
@@ -167,11 +188,14 @@ app.whenReady().then(() => {
       });
 
       item.once('done', (event, state) => {
+        if (mainWin) {
+          mainWin.webContents.send('download-done', {
+            id, state, savePath: item.getSavePath()
+          });
+        }
         activeDownloads.delete(id);
-        webContents.send('download-done', {
-          id, state, savePath: item.getSavePath()
-        });
       });
+
     });
   }
 

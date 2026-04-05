@@ -664,6 +664,85 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ── Context Menu ──────────────────────────────────────
+const ctxMenu = $('#ctx-menu');
+
+function showCtxMenu(e, items) {
+  e.preventDefault();
+  const x = e.clientX, y = e.clientY;
+  ctxMenu.innerHTML = items.map(it => {
+    if (it.type === 'sep') return '<div class="ctx-sep"></div>';
+    return `
+      <div class="ctx-item${it.disabled ? ' disabled' : ''}" onclick="handleCtxClick('${it.id}')">
+        ${it.icon || ''}
+        <span>${esc(it.label)}</span>
+        ${it.key ? `<span class="ctx-key">${it.key}</span>` : ''}
+      </div>`;
+  }).join('');
+
+  ctxMenu.classList.remove('hidden');
+  const mH = ctxMenu.offsetHeight, mW = ctxMenu.offsetWidth;
+  ctxMenu.style.top = (y + mH > window.innerHeight ? y - mH : y) + 'px';
+  ctxMenu.style.left = (x + mW > window.innerWidth ? x - mW : x) + 'px';
+}
+
+const ctxIcons = {
+  back: '<svg width="14" height="14" viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  fwd: '<svg width="14" height="14" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  reload: '<svg width="14" height="14" viewBox="0 0 16 16"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13.5 3v3.5H10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  print: '<svg width="14" height="14" viewBox="0 0 16 16"><path d="M4 5V2h8v3M4 11H2V7h12v4h-2M4 9h8v5H4z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>',
+  source: '<svg width="14" height="14" viewBox="0 0 16 16"><path d="M5 4L2 8l3 4M11 4l3 4-3 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  inspect: '<svg width="14" height="14" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.2"/></svg>',
+  newTab: '<svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+};
+
+window.handleCtxClick = (id) => {
+  ctxMenu.classList.add('hidden');
+  const wv = document.getElementById(`wv-${activeTabId}`);
+  switch (id) {
+    case 'back': if (wv) wv.goBack(); break;
+    case 'fwd': if (wv) wv.goForward(); break;
+    case 'reload': if (wv) wv.reload(); break;
+    case 'view-source': if (wv) window.electronAPI.viewSource(wv.getURL()); break;
+    case 'inspect': if (wv) wv.inspectElement(lastCtxPos.x, lastCtxPos.y); break;
+    case 'print': if (wv) wv.print(); break;
+    case 'new-tab': createTab(''); break;
+    case 'close-tab': if (activeTabId) closeTab(activeTabId); break;
+  }
+};
+
+let lastCtxPos = { x: 0, y: 0 };
+document.addEventListener('contextmenu', e => {
+  if (e.target.closest('#sidebar')) {
+    showCtxMenu(e, [
+      { id: 'new-tab', label: 'New Tab', key: 'Ctrl+T', icon: ctxIcons.newTab },
+      { id: 'sep', type: 'sep' },
+      { id: 'rename', label: 'Rename Space...', disabled: true },
+      { id: 'theme', label: 'Edit Theme Color...', disabled: true },
+    ]);
+  }
+});
+
+document.addEventListener('click', () => ctxMenu.classList.add('hidden'));
+
+window.electronAPI.onWebviewContextMenu((e, data) => {
+  lastCtxPos = { x: data.x, y: data.y };
+  const items = [
+    { id: 'back', label: 'Back', key: 'Alt+←', icon: ctxIcons.back, disabled: !data.canGoBack },
+    { id: 'fwd', label: 'Forward', key: 'Alt+→', icon: ctxIcons.fwd, disabled: !data.canGoForward },
+    { id: 'reload', label: 'Reload', key: 'Ctrl+R', icon: ctxIcons.reload },
+    { id: 'sep', type: 'sep' },
+    { id: 'print', label: 'Print...', key: 'Ctrl+P', icon: ctxIcons.print },
+    { id: 'sep', type: 'sep' },
+    { id: 'view-source', label: 'View page source', key: 'Ctrl+U', icon: ctxIcons.source },
+    { id: 'inspect', label: 'Inspect', icon: ctxIcons.inspect }
+  ];
+  const ev = { clientX: data.x, clientY: data.y, preventDefault: () => { } };
+  showCtxMenu(ev, items);
+});
+
+
 // ── Boot ──────────────────────────────────────────────
 applyTheme();
 createTab('https://www.google.com');
+

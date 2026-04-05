@@ -301,8 +301,9 @@ function checkActiveDownloads() {
 }
 
 function showDownloadsButton(show) {
-  btnDl.style.display = show ? 'flex' : 'none';
+  btnDl.style.opacity = show ? '1' : '0.4';
 }
+
 
 function renderDownloads() {
   const html = downloads.slice(0, 10).map(dl => renderDlItem(dl)).join('');
@@ -609,8 +610,8 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Window Controls ───────────────────────────────────
-$('#btn-close').addEventListener('click', () => { if (activeTabId) closeTab(activeTabId); });
-$('#btn-min').addEventListener('click', () => { $('#main-col').style.display = 'none'; });
+$('#btn-close').addEventListener('click', () => window.electronAPI.close());
+$('#btn-min').addEventListener('click', () => window.electronAPI.minimize());
 $('#btn-max').addEventListener('click', () => window.electronAPI.maximize());
 
 // ── OS Background Controls ────────────────────────────

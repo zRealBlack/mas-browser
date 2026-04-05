@@ -1,4 +1,6 @@
 const { app, BrowserWindow, ipcMain, session, dialog } = require('electron');
+app.name = 'MAS Browser';
+
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
@@ -16,7 +18,7 @@ function createWindow(incognito = false) {
     },
   });
 
-  // Handle links that request a new window by opening them in a new tab instead
+  // Set global handler for the main window its contents
   win.webContents.setWindowOpenHandler(({ url }) => {
     win.webContents.send('new-tab-from-main', url);
     return { action: 'deny' };
@@ -30,6 +32,19 @@ function createWindow(incognito = false) {
   win.on('unmaximize', () => win.webContents.send('win-state', false));
   return win;
 }
+
+
+// Ensure ALL webviews and windows open in tabs
+app.on('web-contents-created', (event, contents) => {
+  contents.setWindowOpenHandler(({ url }) => {
+    const wins = BrowserWindow.getAllWindows();
+    if (wins.length > 0) {
+      wins[0].webContents.send('new-tab-from-main', url);
+    }
+    return { action: 'deny' };
+  });
+});
+
 
 app.whenReady().then(() => {
   createWindow();
@@ -120,50 +135,53 @@ app.whenReady().then(() => {
 
   session.defaultSession.setPermissionRequestHandler((_, __, cb) => cb(true));
 
-  // --- DOWNLOAD MANAGEMENT ---
+  // --- DOWNLOAD MANAGEMENT (GLOBAL) ---
   const activeDownloads = new Map();
 
-  session.defaultSession.on('will-download', (event, item, webContents) => {
-    const id = Date.now().toString();
-    const fileName = item.getFilename();
-    const totalBytes = item.getTotalBytes();
+  function setupDownloadHandler(ses) {
+    ses.on('will-download', (event, item, webContents) => {
+      const id = Date.now().toString();
+      const fileName = item.getFilename();
+      const totalBytes = item.getTotalBytes();
+      activeDownloads.set(id, item);
 
-    activeDownloads.set(id, item);
-
-    // Initial notification
-    webContents.send('download-started', {
-      id,
-      fileName,
-      totalBytes,
-      savePath: item.getSavePath()
-    });
-
-    item.on('updated', (event, state) => {
-      if (state === 'interrupted') {
-        webContents.send('download-updated', { id, state: 'interrupted' });
-      } else if (state === 'progressing') {
-        if (item.isPaused()) {
-          webContents.send('download-updated', { id, state: 'paused' });
-        } else {
-          webContents.send('download-updated', {
-            id,
-            state: 'progressing',
-            receivedBytes: item.getReceivedBytes(),
-            totalBytes: item.getTotalBytes()
-          });
-        }
-      }
-    });
-
-    item.once('done', (event, state) => {
-      activeDownloads.delete(id);
-      webContents.send('download-done', {
-        id,
-        state,
+      webContents.send('download-started', {
+        id, fileName, totalBytes,
         savePath: item.getSavePath()
       });
+
+      item.on('updated', (event, state) => {
+        if (state === 'interrupted') {
+          webContents.send('download-updated', { id, state: 'interrupted' });
+        } else if (state === 'progressing') {
+          if (item.isPaused()) {
+            webContents.send('download-updated', { id, state: 'paused' });
+          } else {
+            webContents.send('download-updated', {
+              id, state: 'progressing',
+              receivedBytes: item.getReceivedBytes(),
+              totalBytes: item.getTotalBytes()
+            });
+          }
+        }
+      });
+
+      item.once('done', (event, state) => {
+        activeDownloads.delete(id);
+        webContents.send('download-done', {
+          id, state, savePath: item.getSavePath()
+        });
+      });
     });
+  }
+
+  // Setup for current default session
+  setupDownloadHandler(session.defaultSession);
+  // Setup for any new session (Incognito/Profiles)
+  app.on('session-created', (ses) => {
+    setupDownloadHandler(ses);
   });
+
 
   ipcMain.on('download-open', (e, filePath) => {
     const { shell } = require('electron');

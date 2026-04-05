@@ -554,7 +554,8 @@ body {
   position: fixed;
   z-index: 800;
   top: var(--tb-h);
-  right: 100px;
+  left: 16px;
+
   width: 320px;
   max-height: 480px;
   background: var(--cmd-bg);

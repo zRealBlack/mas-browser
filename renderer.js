@@ -635,10 +635,11 @@ document.addEventListener('keydown', e => {
 let hubOpen = false;
 function toggleHub(v) {
   hubOpen = (v !== undefined) ? v : !hubOpen;
-  const col = $('#main-col');
-  col.classList.toggle('minimized', hubOpen);
-  if (hubOpen) closeDownloads(); // Clean up overlay
+  const viewer = $('#main-viewer');
+  viewer.classList.toggle('minimized', hubOpen);
+  if (hubOpen) closeDownloads();
 }
+
 
 $('#hub').addEventListener('click', () => toggleHub(false));
 $('#hub-btn-dl').addEventListener('click', () => { toggleHub(false); toggleDownloads(); });

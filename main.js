@@ -48,13 +48,38 @@ app.whenReady().then(() => {
   });
   ipcMain.on('check-updates', e => {
     if (app.isPackaged) {
-      autoUpdater.checkForUpdatesAndNotify();
+      autoUpdater.checkForUpdates();
     } else {
       dialog.showMessageBox(BrowserWindow.fromWebContents(e.sender), {
         type: 'info', title: 'Updates', message: 'Update check disabled in dev mode.',
         detail: 'Packaged app will check GitHub for updates.', buttons: ['OK']
       });
     }
+  });
+
+  // --- AUTO UPDATER EVENTS ---
+  autoUpdater.on('update-available', (info) => {
+    const wins = BrowserWindow.getAllWindows();
+    wins.forEach(win => win.webContents.send('update-available', info));
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    const wins = BrowserWindow.getAllWindows();
+    wins.forEach(win => win.webContents.send('update-progress', progressObj));
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    const wins = BrowserWindow.getAllWindows();
+    wins.forEach(win => win.webContents.send('update-downloaded', info));
+  });
+
+  autoUpdater.on('error', (err) => {
+    const wins = BrowserWindow.getAllWindows();
+    wins.forEach(win => win.webContents.send('update-error', err.message));
+  });
+
+  ipcMain.on('update-restart', () => {
+    autoUpdater.quitAndInstall();
   });
 
   ipcMain.handle('import-bookmarks', async () => {

@@ -1897,3 +1897,20 @@ body {
 .hidden {
   display: none !important
 }
+
+/* UPDATE NOTIFICATION */
+#update-notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1100;
+  width: 280px;
+  padding: 16px;
+  background: var(--cmd-bg);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  box-shadow: var(--glass-shadow), 0 20px 48px rgba(0, 0, 0, .12);
+  animation: menuIn .3s ease-out;
+}

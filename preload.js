@@ -20,4 +20,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onDownloadDone: cb => ipcRenderer.on('download-done', (_, data) => cb(data)),
   openDownload: filePath => ipcRenderer.send('download-open', filePath),
   showDownloadInFolder: filePath => ipcRenderer.send('download-show-folder', filePath),
+  // Update Handlers
+  onUpdateAvailable: cb => ipcRenderer.on('update-available', (_, info) => cb(info)),
+  onUpdateProgress: cb => ipcRenderer.on('update-progress', (_, progress) => cb(progress)),
+  onUpdateDownloaded: cb => ipcRenderer.on('update-downloaded', (_, info) => cb(info)),
+  onUpdateError: cb => ipcRenderer.on('update-error', (_, err) => cb(err)),
+  installUpdate: () => ipcRenderer.send('update-restart'),
 });

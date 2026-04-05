@@ -261,6 +261,8 @@ document.addEventListener('click', e => {
   if (menuOpen && !appMenu.contains(e.target) && e.target.id !== 'btn-mas') closeMenu();
   if (siteInfoOpen && !siteInfoPanel.contains(e.target) && e.target.id !== 'btn-site-info' && !e.target.closest('#btn-site-info')) closeSiteInfo();
   if (downloadsOpen && !downloadsPanel.contains(e.target) && e.target.id !== 'btn-downloads' && !e.target.closest('#btn-downloads')) closeDownloads();
+  const updateNotif = $('#update-notification');
+  if (!updateNotif.classList.contains('hidden') && !updateNotif.contains(e.target) && e.target.id !== 'btn-close-update') updateNotif.classList.add('hidden');
 });
 
 // ── Downloads Management ──────────────────────────────
@@ -375,6 +377,34 @@ window.electronAPI.onDownloadDone(data => updateDownload(data));
 
 // Initial check for button visibility
 if (downloads.length > 0) showDownloadsButton(true);
+
+// ── Update Notification ──────────────────────────────
+const updateNotif = $('#update-notification');
+const updateStatus = $('#update-status');
+const btnInstallUpdate = $('#btn-install-update');
+
+$('#btn-close-update').addEventListener('click', () => updateNotif.classList.add('hidden'));
+btnInstallUpdate.addEventListener('click', () => window.electronAPI.installUpdate());
+
+window.electronAPI.onUpdateAvailable(info => {
+  updateStatus.textContent = `Version ${info.version} is available. Downloading...`;
+  updateNotif.classList.remove('hidden');
+});
+
+window.electronAPI.onUpdateProgress(p => {
+  updateStatus.textContent = `Downloading update: ${Math.round(p.percent)}%`;
+});
+
+window.electronAPI.onUpdateDownloaded(info => {
+  updateStatus.textContent = `Version ${info.version} downloaded and ready.`;
+  btnInstallUpdate.style.display = 'block';
+  updateNotif.classList.remove('hidden');
+});
+
+window.electronAPI.onUpdateError(err => {
+  console.error('Update error:', err);
+  // Keep it quiet unless user manually checked
+});
 
 // ── Tab Management ────────────────────────────────────
 function getPartition() {

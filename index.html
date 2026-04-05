@@ -159,101 +159,101 @@
             <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
           </svg>
         </button>
-    </div>
-    </header>
+      </header>
 
-    <!-- DOWNLOADS PANEL -->
-    <div id="downloads-panel" class="hidden">
-      <div class="dl-hdr">
-        <span>Downloads</span>
-        <button class="dl-clear" id="btn-clear-dl">Clear All</button>
+      <!-- DOWNLOADS PANEL -->
+      <div id="downloads-panel" class="hidden">
+        <div class="dl-hdr">
+          <span>Downloads</span>
+          <button class="dl-clear" id="btn-clear-dl">Clear All</button>
+        </div>
+        <div id="dl-list">
+          <!-- Downloads will be injected here -->
+        </div>
+        <button class="si-share-btn" id="btn-show-all-dl" style="margin-top: 8px;">
+          <svg width="15" height="15" viewBox="0 0 15 15">
+            <path d="M2 2h11v11H2V2zm1 1v9h9V3H3zM4 4h7v1H4V4zm0 2h7v1H4V6zm0 2h4v1H4V8z" fill="currentColor" />
+          </svg>
+          Show All Downloads
+        </button>
       </div>
-      <div id="dl-list">
-        <!-- Downloads will be injected here -->
-      </div>
-      <button class="si-share-btn" id="btn-show-all-dl" style="margin-top: 8px;">
-        <svg width="15" height="15" viewBox="0 0 15 15">
-          <path d="M2 2h11v11H2V2zm1 1v9h9V3H3zM4 4h7v1H4V4zm0 2h7v1H4V6zm0 2h4v1H4V8z" fill="currentColor" />
-        </svg>
-        Show All Downloads
-      </button>
-    </div>
 
-    <!-- UPDATE NOTIFICATION -->
-    <div id="update-notification" class="hidden">
-      <div class="dl-hdr">
-        <span>Software Update</span>
-        <button class="dl-clear" id="btn-close-update">&times;</button>
+      <!-- UPDATE NOTIFICATION -->
+      <div id="update-notification" class="hidden">
+        <div class="dl-hdr">
+          <span>Software Update</span>
+          <button class="dl-clear" id="btn-close-update">&times;</button>
+        </div>
+        <p id="update-status" style="font-size:12px; margin: 4px 0 10px; color: var(--text2);">A new version is
+          available.
+        </p>
+        <button class="st-btn-teal" id="btn-install-update" style="width: 100%; display: none;">Restart and
+          Update</button>
       </div>
-      <p id="update-status" style="font-size:12px; margin: 4px 0 10px; color: var(--text2);">A new version is available.
-      </p>
-      <button class="st-btn-teal" id="btn-install-update" style="width: 100%; display: none;">Restart and
-        Update</button>
-    </div>
 
-    <!-- DOWNLOADS OVERLAY (Full Page) -->
-    <div id="downloads-overlay" class="hidden">
-      <div id="dl-overlay-backdrop"></div>
-      <div id="dl-overlay-panel">
-        <button id="dl-overlay-close">&times;</button>
-        <h2 class="st-title">All Downloads</h2>
-        <div id="dl-full-list" class="st-scroll"></div>
+      <!-- DOWNLOADS OVERLAY (Full Page) -->
+      <div id="downloads-overlay" class="hidden">
+        <div id="dl-overlay-backdrop"></div>
+        <div id="dl-overlay-panel">
+          <button id="dl-overlay-close">&times;</button>
+          <h2 class="st-title">All Downloads</h2>
+          <div id="dl-full-list" class="st-scroll"></div>
+        </div>
       </div>
-    </div>
 
-    <!-- SITE INFO DROPDOWN -->
-    <div id="site-info-panel" class="hidden">
-      <button class="si-share-btn" id="btn-share-url">
-        <svg width="15" height="15" viewBox="0 0 15 15">
-          <path d="M4 8v4a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V8M7.5 2v7M5 4.5L7.5 2 10 4.5" fill="none" stroke="currentColor"
-            stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-        Share URL
-      </button>
-      <div class="si-sep"></div>
-      <div class="si-section-label">Extensions</div>
-      <div class="si-ext-row">
-        <div class="si-ext-placeholder"></div>
-        <button class="si-ext-add" id="btn-add-ext" title="Add Extension">+</button>
+      <!-- SITE INFO DROPDOWN -->
+      <div id="site-info-panel" class="hidden">
+        <button class="si-share-btn" id="btn-share-url">
+          <svg width="15" height="15" viewBox="0 0 15 15">
+            <path d="M4 8v4a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1V8M7.5 2v7M5 4.5L7.5 2 10 4.5" fill="none"
+              stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          Share URL
+        </button>
+        <div class="si-sep"></div>
+        <div class="si-section-label">Extensions</div>
+        <div class="si-ext-row">
+          <div class="si-ext-placeholder"></div>
+          <button class="si-ext-add" id="btn-add-ext" title="Add Extension">+</button>
+        </div>
+        <div class="si-sep"></div>
+        <div class="si-toggle-row">
+          <span>Automatic Picture-In-Picture</span>
+          <label class="toggle sm"><input type="checkbox" id="toggle-pip"><span class="toggle-track"><span
+                class="toggle-thumb"></span></span></label>
+        </div>
+        <div class="si-sep"></div>
+        <div class="si-secure-row">
+          <svg width="14" height="14" viewBox="0 0 14 14">
+            <rect x="3" y="6" width="8" height="6" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2" />
+            <path d="M5 6V4.5a2 2 0 0 1 4 0V6" fill="none" stroke="currentColor" stroke-width="1.2"
+              stroke-linecap="round" />
+          </svg>
+          <span class="si-secure-text">Secure</span>
+          <button class="si-more-btn" id="btn-si-more" title="More">•••</button>
+        </div>
+        <!-- Sub-menu for site settings -->
+        <div id="si-more-menu" class="hidden">
+          <div class="si-mi" id="si-clear-cache">Clear Cache</div>
+          <div class="si-mi" id="si-clear-cookies">Clear Cookies</div>
+          <div class="si-mi" id="si-manage-ext">Manage Extensions</div>
+          <div class="si-mi" id="si-add-ext">Add Extension</div>
+          <div class="si-mi" id="si-all-settings">All Site Settings</div>
+        </div>
       </div>
-      <div class="si-sep"></div>
-      <div class="si-toggle-row">
-        <span>Automatic Picture-In-Picture</span>
-        <label class="toggle sm"><input type="checkbox" id="toggle-pip"><span class="toggle-track"><span
-              class="toggle-thumb"></span></span></label>
-      </div>
-      <div class="si-sep"></div>
-      <div class="si-secure-row">
-        <svg width="14" height="14" viewBox="0 0 14 14">
-          <rect x="3" y="6" width="8" height="6" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2" />
-          <path d="M5 6V4.5a2 2 0 0 1 4 0V6" fill="none" stroke="currentColor" stroke-width="1.2"
-            stroke-linecap="round" />
-        </svg>
-        <span class="si-secure-text">Secure</span>
-        <button class="si-more-btn" id="btn-si-more" title="More">•••</button>
-      </div>
-      <!-- Sub-menu for site settings -->
-      <div id="si-more-menu" class="hidden">
-        <div class="si-mi" id="si-clear-cache">Clear Cache</div>
-        <div class="si-mi" id="si-clear-cookies">Clear Cookies</div>
-        <div class="si-mi" id="si-manage-ext">Manage Extensions</div>
-        <div class="si-mi" id="si-add-ext">Add Extension</div>
-        <div class="si-mi" id="si-all-settings">All Site Settings</div>
-      </div>
-    </div>
 
-    <!-- MAIN CONTENT -->
-    <div id="content">
-      <div id="webview-wrap">
-        <div id="newtab-page" class="active">
-          <div class="nt-inner">
-            <h1 class="nt-logo">MAS</h1>
-            <p class="nt-sub">Press <kbd>Ctrl+L</kbd> to start browsing</p>
+      <!-- MAIN CONTENT -->
+      <div id="content">
+        <div id="webview-wrap">
+          <div id="newtab-page" class="active">
+            <div class="nt-inner">
+              <h1 class="nt-logo">MAS</h1>
+              <p class="nt-sub">Press <kbd>Ctrl+L</kbd> to start browsing</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
   </div>
 
   <!-- ========== COMMAND BAR ========== -->

@@ -1,6 +1,6 @@
 {
   "name": "arc-browser",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Arc Browser clone built with Electron.js",
   "main": "main.js",
   "scripts": {

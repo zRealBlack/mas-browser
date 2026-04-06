@@ -2114,3 +2114,19 @@ body {
   box-shadow: 0 60px 120px rgba(0, 0, 0, 0.4);
   pointer-events: none;
 }
+
+/* ============================================================
+   MACOS SPECIFIC OVERRIDES
+   ============================================================ */
+body.platform-mac #os-controls,
+body.platform-mac .tb-right .wc {
+  display: none !important;
+}
+
+body.platform-mac #topbar {
+  padding-left: 72px !important;
+}
+
+body.platform-mac #sidebar {
+  border-top-left-radius: 12px;
+}

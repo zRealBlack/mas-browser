@@ -9,7 +9,9 @@ function createWindow(incognito = false) {
   const win = new BrowserWindow({
     width: 1280, height: 860, minWidth: 800, minHeight: 500,
     title: 'MAS Browser', autoHideMenuBar: true,
-    frame: false, backgroundColor: incognito ? '#0e0e0e' : '#f0f0f2',
+    frame: false,
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hidden', trafficLightPosition: { x: 12, y: 16 } } : {}),
+    backgroundColor: incognito ? '#0e0e0e' : '#f0f0f2',
     icon: path.join(__dirname, 'logo.png'),
     webPreferences: {
       webviewTag: true,
@@ -124,7 +126,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('import-bookmarks', async () => {
     const result = { bookmarks: [], source: null };
-    const tryPaths = [
+    const tryPaths = process.platform === 'darwin' ? [
+      { name: 'Chrome', p: path.join(app.getPath('home'), 'Library', 'Application Support', 'Google', 'Chrome', 'Default', 'Bookmarks') },
+      { name: 'Edge', p: path.join(app.getPath('home'), 'Library', 'Application Support', 'Microsoft Edge', 'Default', 'Bookmarks') },
+    ] : [
       { name: 'Chrome', p: path.join(process.env.LOCALAPPDATA || '', 'Google', 'Chrome', 'User Data', 'Default', 'Bookmarks') },
       { name: 'Edge', p: path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'Edge', 'User Data', 'Default', 'Bookmarks') },
     ];

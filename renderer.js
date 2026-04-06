@@ -2,6 +2,9 @@
    MAS BROWSER — RENDERER (ALL FUNCTIONALITY)
    ============================================================ */
 
+const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+if (isMac) document.body.classList.add('platform-mac');
+
 // ── Constants ─────────────────────────────────────────
 const SWATCHES = [
   { name: 'Default', light: '#e8e8ec', dark: '#1a1a1a' },
@@ -621,14 +624,15 @@ $('#cmd-backdrop').addEventListener('click', closeCmd);
 
 // ── Keyboard Shortcuts ────────────────────────────────
 document.addEventListener('keydown', e => {
-  if (e.ctrlKey && e.key === 'l') { e.preventDefault(); openCmd(); }
-  if (e.ctrlKey && e.key === 't') { e.preventDefault(); createTab(''); }
-  if (e.ctrlKey && e.key === 'w') { e.preventDefault(); if (activeTabId) closeTab(activeTabId); }
-  if (e.ctrlKey && e.key === 'n') { e.preventDefault(); if (e.shiftKey) window.electronAPI.newIncognito(); else window.electronAPI.newWindow(); }
-  if (e.ctrlKey && e.key === ',') { e.preventDefault(); openSettings(); }
-  if (e.ctrlKey && e.key === 'p') { e.preventDefault(); const wv = document.getElementById(`wv-${activeTabId}`); if (wv) wv.print(); }
-  if (e.ctrlKey && e.shiftKey && e.key === 'C') { e.preventDefault(); copyCurrentUrl(); }
-  if (e.altKey && e.key === 'F4') { e.preventDefault(); window.electronAPI.close(); }
+  const modKey = isMac ? e.metaKey : e.ctrlKey;
+  if (modKey && e.key === 'l') { e.preventDefault(); openCmd(); }
+  if (modKey && e.key === 't') { e.preventDefault(); createTab(''); }
+  if (modKey && e.key === 'w') { e.preventDefault(); if (activeTabId) closeTab(activeTabId); }
+  if (modKey && e.key === 'n') { e.preventDefault(); if (e.shiftKey) window.electronAPI.newIncognito(); else window.electronAPI.newWindow(); }
+  if (modKey && e.key === ',') { e.preventDefault(); openSettings(); }
+  if (modKey && e.key === 'p') { e.preventDefault(); const wv = document.getElementById(`wv-${activeTabId}`); if (wv) wv.print(); }
+  if (modKey && e.shiftKey && e.key === 'C') { e.preventDefault(); copyCurrentUrl(); }
+  if (isMac ? (e.metaKey && e.key === 'q') : (e.altKey && e.key === 'F4')) { e.preventDefault(); window.electronAPI.close(); }
 });
 
 // ── Hub & Spatial UI ──────────────────────────────────
@@ -790,4 +794,14 @@ window.electronAPI.onWebviewContextMenu((e, data) => {
 // ── Boot ──────────────────────────────────────────────
 applyTheme();
 createTab('https://www.google.com');
+
+if (isMac) {
+  // Update tooltips and keyboard hints for Mac
+  document.querySelectorAll('[title]').forEach(el => {
+    el.title = el.title.replace(/Ctrl\+/g, '⌘').replace(/Alt\+F4/g, '⌘Q');
+  });
+  document.querySelectorAll('.mi-key, .ctx-key, .nt-sub kbd, .st-desc kbd').forEach(el => {
+    el.textContent = el.textContent.replace(/Ctrl\+/g, '⌘').replace(/Alt\+F4/g, '⌘Q').replace(/Ctrl/g, '⌘');
+  });
+}
 

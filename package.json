@@ -6,7 +6,9 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win",
-    "publish": "electron-builder --win -p always"
+    "build:mac": "electron-builder --mac",
+    "publish": "electron-builder --win -p always",
+    "publish:mac": "electron-builder --mac -p always"
   },
   "devDependencies": {
     "electron": "^33.0.0",
@@ -28,6 +30,28 @@
         "portable"
       ],
       "icon": "logo.png"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "logo.png",
+      "category": "public.app-category.productivity"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     },
     "nsis": {
       "oneClick": false,

@@ -518,10 +518,10 @@ function navigateTab(id, input) {
   if (!input.includes('.') && !input.startsWith('http') && !input.startsWith('file://')) {
     // Determine search engine
     let engine = 'https://www.google.com/search?q=';
-    const sel = document.getElementById('nt-engine-sel');
-    if (sel && sel.value === 'bing') engine = 'https://www.bing.com/search?q=';
-    else if (sel && sel.value === 'yahoo') engine = 'https://search.yahoo.com/search?p=';
-    else if (sel && sel.value === 'duckduckgo') engine = 'https://duckduckgo.com/?q=';
+    const val = localStorage.getItem('mas-search-engine') || 'google';
+    if (val === 'bing') engine = 'https://www.bing.com/search?q=';
+    else if (val === 'yahoo') engine = 'https://search.yahoo.com/search?p=';
+    else if (val === 'duckduckgo') engine = 'https://duckduckgo.com/?q=';
 
     url = engine + encodeURIComponent(input);
   } else {
@@ -732,7 +732,8 @@ newtabPage.innerHTML = `
     <img src="logo.png" style="width:100px; height:100px; border-radius:20px; display:block; margin: 0 auto 16px; box-shadow: 0 12px 32px rgba(0,0,0,0.25);" alt="MAS Browser">
     <div class="nt-search" id="nt-search-wrap" style="position:relative; display:flex; align-items:center; padding: 0 16px; cursor:text">
       <div style="position:relative; display:flex; align-items:center; background:rgba(0,0,0,0.05); padding:4px 10px; border-radius:8px; margin-right:10px;">
-        <select id="nt-engine-sel" style="background:transparent; border:none; color:var(--text); outline:none; font-weight:600; font-family:inherit; font-size:13px; cursor:pointer; appearance:none; -webkit-appearance:none; padding-right:18px;">
+        <img id="nt-engine-icon" src="https://www.google.com/favicon.ico" style="width:14px; height:14px; margin-right:6px; pointer-events:none; border-radius:2px;">
+        <select id="nt-engine-sel" style="background:transparent; border:none; color:var(--text); outline:none; font-weight:600; font-family:inherit; font-size:13px; cursor:pointer; appearance:none; -webkit-appearance:none; padding-right:14px;">
           <option value="google">Google</option>
           <option value="bing">Bing</option>
           <option value="yahoo">Yahoo</option>
@@ -746,6 +747,20 @@ newtabPage.innerHTML = `
     <p class="nt-sub">Press <kbd>Ctrl+L</kbd> to focus the address bar</p>
   </div>`;
 updateClock();
+
+// Initialize the search engine dropdown
+const ntSel = document.getElementById('nt-engine-sel');
+const ntIcon = document.getElementById('nt-engine-icon');
+ntSel.value = localStorage.getItem('mas-search-engine') || 'google';
+const updateEngineIcon = () => {
+  localStorage.setItem('mas-search-engine', ntSel.value);
+  if (ntSel.value === 'google') ntIcon.src = 'https://www.google.com/favicon.ico';
+  else if (ntSel.value === 'bing') ntIcon.src = 'https://www.bing.com/favicon.ico';
+  else if (ntSel.value === 'yahoo') ntIcon.src = 'https://search.yahoo.com/favicon.ico';
+  else if (ntSel.value === 'duckduckgo') ntIcon.src = 'https://duckduckgo.com/favicon.ico';
+};
+updateEngineIcon();
+ntSel.addEventListener('change', updateEngineIcon);
 
 // New tab search bar click opens the blurred command palette
 document.getElementById('nt-search-wrap').addEventListener('click', e => {

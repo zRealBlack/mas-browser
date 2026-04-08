@@ -449,9 +449,9 @@ function createTab(url, opts = {}) {
   if (url) {
     const wv = document.createElement('webview');
     wv.id = `wv-${id}`;
-    wv.src = toUrl(url);
     wv.setAttribute('allowpopups', '');
     wv.setAttribute('partition', getPartition());
+    wv.src = toUrl(url);
     wireWebview(wv, id);
     webviewWrap.appendChild(wv);
   }
@@ -508,11 +508,14 @@ function closeTab(id) {
 }
 
 function navigateTab(id, input) {
+  if (!id || !tabs.find(t => t.id === id)) {
+    id = createTab('', { activate: true });
+  }
   const tab = tabs.find(t => t.id === id);
   if (!tab) return;
 
   let url = input;
-  if (!input.includes('.') && !input.startsWith('http')) {
+  if (!input.includes('.') && !input.startsWith('http') && !input.startsWith('file://')) {
     // Determine search engine
     let engine = 'https://www.google.com/search?q=';
     const sel = document.getElementById('nt-engine-sel');
@@ -533,13 +536,17 @@ function navigateTab(id, input) {
     wv.id = `wv-${id}`;
     wv.setAttribute('allowpopups', '');
     wv.setAttribute('partition', getPartition());
+    wv.src = url;
     wireWebview(wv, id);
     webviewWrap.appendChild(wv);
+  } else {
+    wv.loadURL(url);
   }
-  wv.loadURL(url);
+
   newtabPage.classList.remove('active');
   wv.classList.add('active');
 }
+
 
 function wireWebview(wv, id) {
   wv.addEventListener('page-title-updated', e => updateMeta(id, { title: e.title }));
@@ -723,14 +730,17 @@ newtabPage.innerHTML = `
   <div class="nt-inner">
     <div id="nt-clock" class="nt-clock"></div>
     <img src="logo.png" style="width:100px; height:100px; border-radius:20px; display:block; margin: 0 auto 16px; box-shadow: 0 12px 32px rgba(0,0,0,0.25);" alt="MAS Browser">
-    <div class="nt-search" id="nt-search-wrap" style="position:relative; display:flex; padding: 0 16px; cursor:text">
-      <select id="nt-engine-sel" style="background:transparent;border:none;color:inherit;outline:none;font-weight:600;padding-right:8px;cursor:pointer;">
-        <option value="google">Google</option>
-        <option value="bing">Bing</option>
-        <option value="yahoo">Yahoo</option>
-        <option value="duckduckgo">DuckDuckGo</option>
-      </select>
-      <div style="width:1px;height:24px;background:var(--card-border);margin:0 12px;opacity:0.5"></div>
+    <div class="nt-search" id="nt-search-wrap" style="position:relative; display:flex; align-items:center; padding: 0 16px; cursor:text">
+      <div style="position:relative; display:flex; align-items:center; background:rgba(0,0,0,0.05); padding:4px 10px; border-radius:8px; margin-right:10px;">
+        <select id="nt-engine-sel" style="background:transparent; border:none; color:var(--text); outline:none; font-weight:600; font-family:inherit; font-size:13px; cursor:pointer; appearance:none; -webkit-appearance:none; padding-right:18px;">
+          <option value="google">Google</option>
+          <option value="bing">Bing</option>
+          <option value="yahoo">Yahoo</option>
+          <option value="duckduckgo">DuckDuckGo</option>
+        </select>
+        <svg width="10" height="10" viewBox="0 0 10 10" style="position:absolute; right:8px; pointer-events:none; opacity:0.6"><path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <div style="width:1px; height:24px; background:var(--card-border); margin-right:12px; opacity:0.5"></div>
       <input id="nt-search-input" class="nt-search-input" style="flex:1" placeholder="Search or enter URL..." readonly spellcheck="false" autocomplete="off">
     </div>
     <p class="nt-sub">Press <kbd>Ctrl+L</kbd> to focus the address bar</p>

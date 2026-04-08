@@ -469,6 +469,7 @@ function switchTab(id) {
   if (hubOpen) toggleHub(false);
 
   $('#main-col').style.display = 'flex';
+  $('#main-viewer').style.display = 'flex';
 
   webviewWrap.querySelectorAll('webview.active').forEach(w => w.classList.remove('active'));
   document.querySelectorAll('.tab-item.active').forEach(el => el.classList.remove('active'));
@@ -498,14 +499,32 @@ function closeTab(id) {
   tabs.splice(idx, 1);
   updateCount();
 
-  if (tabs.length === 0) { createTab(''); return; }
+  if (tabs.length === 0) {
+    activeTabId = null;
+    document.getElementById('main-viewer').style.display = 'none';
+    return;
+  }
   if (activeTabId === id) switchTab(tabs[Math.min(idx, tabs.length - 1)].id);
 }
 
 function navigateTab(id, input) {
   const tab = tabs.find(t => t.id === id);
   if (!tab) return;
-  const url = toUrl(input);
+
+  let url = input;
+  if (!input.includes('.') && !input.startsWith('http')) {
+    // Determine search engine
+    let engine = 'https://www.google.com/search?q=';
+    const sel = document.getElementById('nt-engine-sel');
+    if (sel && sel.value === 'bing') engine = 'https://www.bing.com/search?q=';
+    else if (sel && sel.value === 'yahoo') engine = 'https://search.yahoo.com/search?p=';
+    else if (sel && sel.value === 'duckduckgo') engine = 'https://duckduckgo.com/?q=';
+
+    url = engine + encodeURIComponent(input);
+  } else {
+    url = toUrl(input);
+  }
+
   tab.url = url;
   let wv = document.getElementById(`wv-${id}`);
 
@@ -644,6 +663,20 @@ let hubOpen = false;
 function toggleHub(v) {
   hubOpen = (v !== undefined) ? v : !hubOpen;
   const viewer = $('#main-viewer');
+
+  if (hubOpen && activeTabId) {
+    const tabEl = document.querySelector(`.tab-item[data-id="${activeTabId}"]`);
+    if (tabEl) {
+      const rect = tabEl.getBoundingClientRect();
+      const viewerRect = viewer.getBoundingClientRect();
+      const tx = rect.left + rect.width / 2 - viewerRect.left;
+      const ty = rect.top + rect.height / 2 - viewerRect.top;
+      viewer.style.transformOrigin = '0 0';
+      viewer.style.setProperty('--tx', `${tx}px`);
+      viewer.style.setProperty('--ty', `${ty}px`);
+    }
+  }
+
   viewer.classList.toggle('minimized', hubOpen);
   if (hubOpen) closeDownloads();
 }
@@ -656,16 +689,6 @@ $('#hub-btn-dl').addEventListener('click', () => { toggleHub(false); toggleDownl
 $('#btn-close').addEventListener('click', () => { if (activeTabId) closeTab(activeTabId); });
 $('#btn-min').addEventListener('click', () => toggleHub(true));
 $('#btn-max').addEventListener('click', () => window.electronAPI.maximize());
-
-// ── New Tab Search FIX ────────────────────────────────
-document.addEventListener('keydown', e => {
-  const ntInput = document.getElementById('nt-search-input');
-  if (ntInput && document.activeElement === ntInput && e.key === 'Enter') {
-    const v = ntInput.value.trim();
-    if (v) navigateTab(activeTabId, v);
-  }
-});
-
 
 // ── OS Background Controls ────────────────────────────
 $('#os-btn-close').addEventListener('click', () => window.electronAPI.close());
@@ -700,22 +723,27 @@ newtabPage.innerHTML = `
   <div class="nt-inner">
     <div id="nt-clock" class="nt-clock"></div>
     <img src="logo.png" style="width:100px; height:100px; border-radius:20px; display:block; margin: 0 auto 16px; box-shadow: 0 12px 32px rgba(0,0,0,0.25);" alt="MAS Browser">
-    <div class="nt-search" id="nt-search-wrap">
-      <svg width="16" height="16" viewBox="0 0 16 16" style="opacity:.5;flex-shrink:0"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <input id="nt-search-input" class="nt-search-input" placeholder="Search or enter URL..." spellcheck="false" autocomplete="off">
+    <div class="nt-search" id="nt-search-wrap" style="position:relative; display:flex; padding: 0 16px; cursor:text">
+      <select id="nt-engine-sel" style="background:transparent;border:none;color:inherit;outline:none;font-weight:600;padding-right:8px;cursor:pointer;">
+        <option value="google">Google</option>
+        <option value="bing">Bing</option>
+        <option value="yahoo">Yahoo</option>
+        <option value="duckduckgo">DuckDuckGo</option>
+      </select>
+      <div style="width:1px;height:24px;background:var(--card-border);margin:0 12px;opacity:0.5"></div>
+      <input id="nt-search-input" class="nt-search-input" style="flex:1" placeholder="Search or enter URL..." readonly spellcheck="false" autocomplete="off">
     </div>
     <p class="nt-sub">Press <kbd>Ctrl+L</kbd> to focus the address bar</p>
   </div>`;
 updateClock();
 
-// New tab search bar
-document.addEventListener('keydown', e => {
-  const ntInput = document.getElementById('nt-search-input');
-  if (ntInput && document.activeElement === ntInput && e.key === 'Enter') {
-    const v = ntInput.value.trim();
-    if (v) { navigateTab(activeTabId, v); ntInput.value = ''; }
+// New tab search bar click opens the blurred command palette
+document.getElementById('nt-search-wrap').addEventListener('click', e => {
+  if (e.target.id !== 'nt-engine-sel') {
+    openCmd();
   }
 });
+
 
 // ── Context Menu ──────────────────────────────────────
 const ctxMenu = $('#ctx-menu');

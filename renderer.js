@@ -76,6 +76,11 @@ function applyTheme() {
   document.documentElement.style.setProperty('--sidebar-bg', sbColor);
   window.electronAPI.setTheme(mode);
   save('mas-theme', theme);
+
+  const logo = document.getElementById('main-app-logo');
+  const ntLogo = document.getElementById('nt-logo-img');
+  if (logo) logo.style.filter = mode === 'dark' ? 'invert(1) brightness(2)' : 'none';
+  if (ntLogo) ntLogo.style.filter = mode === 'dark' ? 'invert(1) brightness(2)' : 'none';
 }
 
 function renderSwatches() {
@@ -729,17 +734,18 @@ setInterval(updateClock, 1000);
 newtabPage.innerHTML = `
   <div class="nt-inner">
     <div id="nt-clock" class="nt-clock"></div>
-    <img src="logo.png" style="width:100px; height:100px; border-radius:20px; display:block; margin: 0 auto 16px; box-shadow: 0 12px 32px rgba(0,0,0,0.25);" alt="MAS Browser">
+    <img src="masbrowserfulllogo.png" id="nt-logo-img" style="width:120px; height:120px; object-fit:contain; display:block; margin: 0 auto 16px;" alt="MAS Browser">
     <div class="nt-search" id="nt-search-wrap" style="position:relative; display:flex; align-items:center; padding: 0 16px; cursor:text">
-      <div style="position:relative; display:flex; align-items:center; background:rgba(0,0,0,0.05); padding:4px 10px; border-radius:8px; margin-right:10px;">
-        <img id="nt-engine-icon" src="https://www.google.com/favicon.ico" style="width:14px; height:14px; margin-right:6px; pointer-events:none; border-radius:2px;">
-        <select id="nt-engine-sel" style="background:transparent; border:none; color:var(--text); outline:none; font-weight:600; font-family:inherit; font-size:13px; cursor:pointer; appearance:none; -webkit-appearance:none; padding-right:14px;">
-          <option value="google">Google</option>
-          <option value="bing">Bing</option>
-          <option value="yahoo">Yahoo</option>
-          <option value="duckduckgo">DuckDuckGo</option>
-        </select>
-        <svg width="10" height="10" viewBox="0 0 10 10" style="position:absolute; right:8px; pointer-events:none; opacity:0.6"><path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <div id="nt-engine-trigger" style="position:relative; display:flex; align-items:center; background:rgba(0,0,0,0.05); padding:6px 12px; border-radius:10px; margin-right:10px; cursor:pointer; transition:background 0.2s">
+        <img id="nt-engine-icon" src="https://www.google.com/favicon.ico" style="width:16px; height:16px; margin-right:8px; pointer-events:none; border-radius:3px;">
+        <span id="nt-engine-name" style="font-weight:600; font-size:13px; margin-right:8px; opacity:0.8; pointer-events:none;">Google</span>
+        <svg width="10" height="10" viewBox="0 0 10 10" style="opacity:0.6; pointer-events:none;"><path d="M2 4l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <div id="nt-engine-dropdown" class="hidden">
+        <div class="nt-engine-item" data-val="google"><img src="https://www.google.com/favicon.ico"><span>Google</span></div>
+        <div class="nt-engine-item" data-val="bing"><img src="https://www.bing.com/favicon.ico"><span>Bing</span></div>
+        <div class="nt-engine-item" data-val="yahoo"><img src="https://search.yahoo.com/favicon.ico"><span>Yahoo</span></div>
+        <div class="nt-engine-item" data-val="duckduckgo"><img src="https://duckduckgo.com/favicon.ico"><span>DuckDuckGo</span></div>
       </div>
       <div style="width:1px; height:24px; background:var(--card-border); margin-right:12px; opacity:0.5"></div>
       <input id="nt-search-input" class="nt-search-input" style="flex:1" placeholder="Search or enter URL..." readonly spellcheck="false" autocomplete="off">
@@ -748,23 +754,45 @@ newtabPage.innerHTML = `
   </div>`;
 updateClock();
 
-// Initialize the search engine dropdown
-const ntSel = document.getElementById('nt-engine-sel');
+const ntTrigger = document.getElementById('nt-engine-trigger');
+const ntDropdown = document.getElementById('nt-engine-dropdown');
+const ntEngineName = document.getElementById('nt-engine-name');
 const ntIcon = document.getElementById('nt-engine-icon');
-ntSel.value = localStorage.getItem('mas-search-engine') || 'google';
-const updateEngineIcon = () => {
-  localStorage.setItem('mas-search-engine', ntSel.value);
-  if (ntSel.value === 'google') ntIcon.src = 'https://www.google.com/favicon.ico';
-  else if (ntSel.value === 'bing') ntIcon.src = 'https://www.bing.com/favicon.ico';
-  else if (ntSel.value === 'yahoo') ntIcon.src = 'https://search.yahoo.com/favicon.ico';
-  else if (ntSel.value === 'duckduckgo') ntIcon.src = 'https://duckduckgo.com/favicon.ico';
-};
-updateEngineIcon();
-ntSel.addEventListener('change', updateEngineIcon);
 
-// New tab search bar click opens the blurred command palette
+const setEngine = (val) => {
+  localStorage.setItem('mas-search-engine', val);
+  ntEngineName.textContent = val.charAt(0).toUpperCase() + val.slice(1);
+  if (val === 'google') ntIcon.src = 'https://www.google.com/favicon.ico';
+  else if (val === 'bing') ntIcon.src = 'https://www.bing.com/favicon.ico';
+  else if (val === 'yahoo') ntIcon.src = 'https://search.yahoo.com/favicon.ico';
+  else if (val === 'duckduckgo') ntIcon.src = 'https://duckduckgo.com/favicon.ico';
+};
+
+if (ntTrigger) {
+  ntTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    ntDropdown.classList.toggle('hidden');
+  });
+}
+
+document.addEventListener('click', () => { if (ntDropdown) ntDropdown.classList.add('hidden'); });
+
+if (ntDropdown) {
+  ntDropdown.querySelectorAll('.nt-engine-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const val = item.dataset.val;
+      setEngine(val);
+      ntDropdown.classList.add('hidden');
+    });
+  });
+}
+
+const initialEngine = localStorage.getItem('mas-search-engine') || 'google';
+setEngine(initialEngine);
+
 document.getElementById('nt-search-wrap').addEventListener('click', e => {
-  if (e.target.id !== 'nt-engine-sel') {
+  if (ntTrigger && !ntTrigger.contains(e.target) && ntDropdown && !ntDropdown.contains(e.target)) {
     openCmd();
   }
 });

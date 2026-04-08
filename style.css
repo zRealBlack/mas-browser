@@ -20,8 +20,8 @@
   --text: #1a1a2e;
   --text2: #555;
   --text3: #999;
-  --accent: #c27e33;
-  --accent-soft: rgba(194, 126, 51, .12);
+  --accent: #474747;
+  --accent-soft: rgba(71, 71, 71, .12);
 
   --sidebar-bg: rgba(240, 240, 244, .65);
   --sidebar-text: var(--text);
@@ -91,7 +91,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #8b4513 0%, #c27e33 50%, #d4a76a 100%);
+  background: linear-gradient(135deg, #333 0%, #474747 50%, #666 100%);
 
 }
 
@@ -2030,7 +2030,20 @@ body {
   justify-content: center;
   z-index: 1;
   background: var(--sidebar-bg);
+  overflow: hidden;
 }
+
+#hub::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url('masbrowserfulllogo.png') no-repeat center center;
+  background-size: 50%;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+
 
 .hub-content {
   text-align: center;
@@ -2114,6 +2127,47 @@ body {
   opacity: 0;
   border-radius: 24px;
   pointer-events: none;
+}
+
+/* Custom Search Engine Dropdown to match ctx-menu */
+#nt-engine-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 16px;
+  margin-top: 8px;
+  background: var(--cmd-bg);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .2);
+  padding: 6px;
+  z-index: 1000;
+  width: 160px;
+  animation: contextIn .12s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.nt-engine-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .1s;
+}
+
+.nt-engine-item:hover {
+  background: var(--topbar-btn-hover);
+}
+
+.nt-engine-item img {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
 }
 
 

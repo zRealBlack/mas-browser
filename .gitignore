@@ -1,6 +1,13 @@
 node_modules/
 dist/
 *.log
-build_log*.txt
-screen_test.png
-screenshot.png
+.env
+tmp_index.html
+.DS_Store
+*.exe
+*.dmg
+*.zip
+*.deb
+*.rpm
+*.appx
+*.msi

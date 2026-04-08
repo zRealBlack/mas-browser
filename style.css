@@ -2104,16 +2104,17 @@ body {
   display: flex;
   flex-direction: column;
   background: var(--bg);
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.6s, box-shadow 0.6s;
-  transform-origin: center right;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s, border-radius 0.4s;
+  transform-origin: center left;
 }
 
 #main-viewer.minimized {
-  transform: scale(0.82) translateX(18%) rotateY(-6deg);
+  transform: scale(0.4) translateX(-40px);
+  opacity: 0;
   border-radius: 24px;
-  box-shadow: 0 60px 120px rgba(0, 0, 0, 0.4);
   pointer-events: none;
 }
+
 
 /* ============================================================
    MACOS SPECIFIC OVERRIDES

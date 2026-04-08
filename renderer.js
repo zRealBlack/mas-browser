@@ -465,10 +465,14 @@ function createTab(url, opts = {}) {
 function switchTab(id) {
   const tab = tabs.find(t => t.id === id);
   if (!tab) return;
+
+  if (hubOpen) toggleHub(false);
+
   $('#main-col').style.display = 'flex';
 
   webviewWrap.querySelectorAll('webview.active').forEach(w => w.classList.remove('active'));
   document.querySelectorAll('.tab-item.active').forEach(el => el.classList.remove('active'));
+
 
   activeTabId = id;
   let wv = document.getElementById(`wv-${id}`);

@@ -2247,3 +2247,49 @@ body.platform-mac #sidebar {
 .st-input:focus, .st-select:focus {
   border-color: var(--teal);
 }
+
+
+/* PROFILE QUICK POPUP */
+#profile-popup {
+  position: fixed;
+  bottom: 50px;
+  left: 16px;
+  z-index: 1000;
+  width: 200px;
+  background: var(--cmd-bg);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  padding: 6px 0;
+  animation: menuIn 0.15s ease;
+}
+#profile-popup.hidden { display: none }
+.pp-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.pp-item:hover {
+  background: var(--accent-soft);
+}
+.pp-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg2);
+  font-size: 10px;
+}
+.pp-sep {
+  height: 1px;
+  background: var(--card-border);
+  margin: 4px 0;
+}

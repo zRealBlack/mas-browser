@@ -25,6 +25,7 @@ let theme = JSON.parse(localStorage.getItem('mas-theme') || '{"mode":"light","ac
 let settings = JSON.parse(localStorage.getItem('mas-settings') || '{"sidebarSync":false,"backdrop":"none","pip":false}');
 let profiles = JSON.parse(localStorage.getItem('mas-profiles') || '[{"id":"default","name":"Default"}]');
 let activeProfileId = 'default';
+let lastActiveProfileId = localStorage.getItem('mas-last-active-profile') || null;
 try {
   let pRAW = localStorage.getItem('mas-active-profile');
   if (pRAW) {
@@ -147,31 +148,52 @@ function renderSwatches() {
 function renderProfiles() {
   const container = $('#profile-list');
   if (!container) return;
-  container.innerHTML = profiles.map(p =>
-    `<div class="st-profile-row" data-pid="${p.id}">
-      <div class="pe-avatar-item" style="width:40px; height:40px; border-radius:50%; background:var(--bg2); display:flex; align-items:center; justify-content:center; font-size:20px; overflow:hidden; border:1px solid var(--border); margin-right:12px;">
-         ${p.avatar ? `<img src="${p.avatar}" style="width:100%; height:100%; object-fit:cover;">` : esc(p.icon || '👤')}
-      </div>
-      <div style="flex:1;">
-         <div class="pr-name" style="font-weight:600;">${esc(p.name)}</div>
-         <div class="pr-sub" style="font-family: monospace; font-size: 10px; opacity: 0.7;">ID: ${p.id}</div>
-         <div class="pr-sub">${p.id === activeProfileId ? 'Active profile' : 'Click Switch to use'}</div>
-      </div>
-      <button class="st-btn-teal st-btn-sm" style="padding:4px 12px; font-size:12px; border-radius:4px; margin-right:6px; background: transparent; color: var(--text); border: 1px solid var(--border);" onclick="openProfileEdit('${p.id}')">Edit</button>
-      ${p.id !== activeProfileId ? `<button class="st-btn-teal st-btn-sm" style="padding:4px 12px; font-size:12px; border-radius:4px;" data-switch="${p.id}">Switch</button>` : ''}
-    </div>`
-  ).join('');
+  
+  const activeP = profiles.find(p => p.id === activeProfileId);
+  const others = profiles.filter(p => p.id !== activeProfileId);
+
+  let html = '';
+  if (activeP) {
+    html += `<div style="font-size:11px; font-weight:700; text-transform:uppercase; opacity:0.5; margin-bottom:10px; letter-spacing:0.5px; margin-top:10px;">Active Profile</div>`;
+    html += renderProfileRow(activeP, true);
+    html += `<div style="height:1px; background:var(--card-border); margin:20px 0;"></div>`;
+  }
+  
+  if (others.length > 0) {
+    html += `<div style="font-size:11px; font-weight:700; text-transform:uppercase; opacity:0.5; margin-bottom:10px; letter-spacing:0.5px;">Other Profiles</div>`;
+    html += others.map(p => renderProfileRow(p, false)).join('');
+  }
+
+  container.innerHTML = html;
 
   container.querySelectorAll('[data-switch]').forEach(el => {
     el.addEventListener('click', e => {
       const pid = e.target.closest('button').dataset.switch;
       if (pid === activeProfileId) return;
       saveTabs();
+      localStorage.setItem('mas-last-active-profile', activeProfileId);
       activeProfileId = pid;
       localStorage.setItem('mas-active-profile', activeProfileId);
       location.reload();
     });
   });
+}
+
+function renderProfileRow(p, isActive) {
+  return `
+    <div class="st-profile-row" data-pid="${p.id}" style="${isActive ? 'background: var(--bg2); border: 1.5px solid var(--teal);' : ''}; margin-bottom:12px; display:flex; align-items:center;">
+      <div class="pe-avatar-item" style="width:44px; height:44px; border-radius:50%; background:var(--bg2); display:flex; align-items:center; justify-content:center; font-size:20px; overflow:hidden; border:1px solid var(--border); margin-right:16px; flex-shrink:0;">
+         ${p.avatar ? `<img src="${p.avatar}" style="width:100%; height:100%; object-fit:cover;">` : esc(p.icon || '👤')}
+      </div>
+      <div style="flex:1; min-width:0;">
+         <div class="pr-name" style="font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(p.name)}</div>
+         <div class="pr-sub" style="font-family: monospace; font-size:10px; opacity:0.6;">ID: ${p.id}</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="st-btn-teal st-btn-sm" style="padding:6px 14px; font-size:12px; border-radius:8px; background: transparent; color: var(--text); border: 1px solid var(--border);" onclick="openProfileEdit('${p.id}')">Edit</button>
+        ${!isActive ? `<button class="st-btn-teal st-btn-sm" style="padding:6px 14px; font-size:12px; border-radius:8px;" data-switch="${p.id}">Switch</button>` : ''}
+      </div>
+    </div>`;
 }
 
 function updateActiveProfileUI() {
@@ -184,7 +206,56 @@ function updateActiveProfileUI() {
   }
 }
 
-btnProfileActive.addEventListener('click', () => openProfileEdit(activeProfileId));
+const ppOverlay = $('#profile-popup');
+const ppList = $('#pp-list');
+
+function renderProfilePopup() {
+  const others = profiles.filter(p => p.id !== activeProfileId);
+  // Show last active if exists, or just the next one
+  let targetP = null;
+  if (lastActiveProfileId && profiles.find(p => p.id === lastActiveProfileId)) {
+    targetP = profiles.find(p => p.id === lastActiveProfileId);
+  } else if (others.length > 0) {
+    targetP = others[0];
+  }
+
+  if (targetP) {
+    ppList.innerHTML = `
+      <div class="pp-item" data-id="${targetP.id}">
+        <div class="pp-avatar">${targetP.avatar ? `<img src="${targetP.avatar}" style="width:100%; height:100%; object-fit:cover;">` : esc(targetP.icon || '👤')}</div>
+        <div style="flex:1;">
+           <div style="font-weight:600;">Switch to ${esc(targetP.name)}</div>
+           <div style="font-size:10px; opacity:0.6;">Quick switch</div>
+        </div>
+      </div>
+    `;
+    ppList.querySelector('.pp-item').addEventListener('click', () => {
+       saveTabs();
+       localStorage.setItem('mas-last-active-profile', activeProfileId);
+       localStorage.setItem('mas-active-profile', targetP.id);
+       location.reload();
+    });
+  } else {
+    ppList.innerHTML = '<div class="pp-item" style="opacity:0.6; cursor:default;">No other profiles</div>';
+  }
+}
+
+btnProfileActive.addEventListener('click', (e) => {
+  e.stopPropagation();
+  renderProfilePopup();
+  ppOverlay.classList.toggle('hidden');
+});
+
+$('#pp-other').addEventListener('click', () => {
+  ppOverlay.classList.add('hidden');
+  openSettings();
+});
+
+document.addEventListener('click', (e) => {
+  if (!ppOverlay.contains(e.target) && !btnProfileActive.contains(e.target)) {
+     ppOverlay.classList.add('hidden');
+  }
+});
 
 const peOverlay = $('#profile-edit-overlay');
 const peNameInput = $('#pe-name-input');

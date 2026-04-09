@@ -73,6 +73,37 @@ function toUrl(s) { s = s.trim(); if (/^https?:\/\//i.test(s)) return s; if (isU
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
 
+function customPrompt(msg, defaultVal) {
+  return new Promise(resolve => {
+    const p = document.getElementById('custom-prompt');
+    const msgEl = document.getElementById('cp-msg');
+    const input = document.getElementById('cp-input');
+    const btnCancel = document.getElementById('cp-cancel');
+    const btnOk = document.getElementById('cp-ok');
+
+    msgEl.textContent = msg;
+    input.value = defaultVal || '';
+    p.classList.remove('hidden');
+    input.focus();
+    input.select();
+
+    const cleanup = () => {
+      p.classList.add('hidden');
+      btnCancel.removeEventListener('click', onCancel);
+      btnOk.removeEventListener('click', onOk);
+      input.removeEventListener('keydown', onKey);
+    };
+
+    const onCancel = () => { cleanup(); resolve(null); };
+    const onOk = () => { cleanup(); resolve(input.value); };
+    const onKey = (e) => { if (e.key === 'Enter') onOk(); if (e.key === 'Escape') onCancel(); };
+
+    btnCancel.addEventListener('click', onCancel);
+    btnOk.addEventListener('click', onOk);
+    input.addEventListener('keydown', onKey);
+  });
+}
+
 // ── Theme System ──────────────────────────────────────
 function applyTheme() {
   const mode = theme.mode || 'light';
@@ -122,13 +153,13 @@ function renderProfiles() {
   ).join('');
 
   container.querySelectorAll('.pr-edit-btn').forEach(el => {
-    el.addEventListener('click', e => {
+    el.addEventListener('click', async e => {
       const pid = e.target.dataset.edit;
       const p = profiles.find(x => x.id === pid);
       if(!p) return;
-      const newName = prompt('Enter a new name for this profile:', p.name);
+      const newName = await customPrompt('Enter a new name for this profile:', p.name);
       if (newName) p.name = newName;
-      const newIcon = prompt('Enter an emoji or character icon:', p.icon || '👤');
+      const newIcon = await customPrompt('Enter an emoji or character icon:', p.icon || '👤');
       if (newIcon) p.icon = newIcon;
       save('mas-profiles', profiles);
       renderProfiles();
@@ -136,19 +167,19 @@ function renderProfiles() {
   });
 
   container.querySelectorAll('.pr-icon-wrap').forEach(el => {
-    el.addEventListener('click', e => {
+    el.addEventListener('click', async e => {
       const pid = e.target.closest('.st-profile-row').dataset.pid;
       const p = profiles.find(x => x.id === pid);
-      const newIcon = prompt('Enter an emoji or character for profile icon:', p.icon || '👤');
+      const newIcon = await customPrompt('Enter an emoji or character for profile icon:', p.icon || '👤');
       if (newIcon) { p.icon = newIcon; save('mas-profiles', profiles); renderProfiles(); }
     });
   });
 
   container.querySelectorAll('.pr-name').forEach(el => {
-    el.addEventListener('click', e => {
+    el.addEventListener('click', async e => {
       const pid = e.target.closest('.st-profile-row').dataset.pid;
       const p = profiles.find(x => x.id === pid);
-      const newName = prompt('Enter new profile name:', p.name);
+      const newName = await customPrompt('Enter new profile name:', p.name);
       if (newName) { p.name = newName; save('mas-profiles', profiles); renderProfiles(); }
     });
   });
@@ -165,8 +196,8 @@ function renderProfiles() {
   });
 }
 
-$('#btn-new-profile').addEventListener('click', () => {
-  const name = prompt('Enter profile name:');
+$('#btn-new-profile').addEventListener('click', async () => {
+  const name = await customPrompt('Enter profile name:');
   if (!name) return;
   const id = 'pr-' + Math.random().toString(36).substr(2, 9);
   profiles.push({ id, name, icon: '👤' });

@@ -41,6 +41,7 @@ let menuOpen = false, siteInfoOpen = false, siMoreOpen = false, downloadsOpen = 
 let downloads = JSON.parse(localStorage.getItem('mas-downloads') || '[]');
 let peEditingId = null;
 let peAvatarData = null;
+let browsingHistory = JSON.parse(localStorage.getItem('mas-history-' + activeProfileId) || '[]');
 
 // ── DOM refs ──────────────────────────────────────────
 const $ = s => document.querySelector(s);
@@ -76,6 +77,15 @@ function isUrlLike(s) { return /^https?:\/\//i.test(s) || (/^[\w-]+(\.[\w-]+)+/.
 function toUrl(s) { s = s.trim(); if (/^https?:\/\//i.test(s)) return s; if (isUrlLike(s)) return 'https://' + s; return 'https://www.google.com/search?q=' + encodeURIComponent(s); }
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+function recordHistory(title, url, favicon) {
+  if (!url || url.startsWith('about:') || isIncognito) return;
+  // Remove duplicate
+  browsingHistory = browsingHistory.filter(h => h.url !== url);
+  browsingHistory.unshift({ title: title || url, url, favicon, time: Date.now() });
+  if (browsingHistory.length > 200) browsingHistory = browsingHistory.slice(0, 200);
+  save('mas-history-' + activeProfileId, browsingHistory);
+}
 
 function customPrompt(msg, defaultVal) {
   return new Promise(resolve => {
@@ -797,6 +807,7 @@ function updateMeta(id, info) {
   }
   if (id === activeTabId) updateUrlBar(tab);
   saveTabs();
+  if (info.url || info.title) recordHistory(tab.title, tab.url, tab.favicon);
 }
 
 function saveTabs() {
@@ -857,17 +868,52 @@ function closeCmd() { cmdOverlay.classList.add('hidden'); }
 
 function renderSugs(q) {
   q = q.toLowerCase().trim();
-  let items = tabs.filter(t => t.title.toLowerCase().includes(q) || (t.url && t.url.toLowerCase().includes(q)));
-  if (!items.length && !q) { cmdSugs.innerHTML = '<div class="cmd-hint">Type a URL or search term…</div>'; return; }
-  if (!items.length) { cmdSugs.innerHTML = ''; return; }
-  cmdSugs.innerHTML = items.map((t, i) => `
-    <div class="sug-item${i === 0 ? ' active' : ''}" data-id="${t.id}">
+  
+  // Filter tabs
+  let tabMatches = tabs.filter(t => t.title.toLowerCase().includes(q) || (t.url && t.url.toLowerCase().includes(q)));
+  
+  // Filter history (exclude items already in tabMatches)
+  let historyMatches = browsingHistory.filter(h => 
+    (h.title.toLowerCase().includes(q) || h.url.toLowerCase().includes(q)) &&
+    !tabs.some(t => t.url === h.url)
+  ).slice(0, 5);
+
+  if (!tabMatches.length && !historyMatches.length && !q) { 
+    cmdSugs.innerHTML = '<div class="cmd-hint">Type a URL or search term…</div>'; return; 
+  }
+  
+  let html = '';
+  
+  // Render Tab matches
+  html += tabMatches.map((t, i) => `
+    <div class="sug-item${i === 0 ? ' active' : ''}" data-type="tab" data-id="${t.id}">
       ${t.favicon ? `<img class="sug-fav" src="${t.favicon}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : `<img class="sug-fav" style="display:none">`}
       <div class="sug-fav-letter" ${t.favicon ? 'style="display:none"' : ''}>${domainLetter(t.url || '')}</div>
       <div class="sug-body"><span class="sug-title">${esc(t.title)}</span><span class="sug-url">${esc(t.url || '')}</span></div>
       <span class="sug-action">Switch to Tab →</span>
     </div>`).join('');
-  cmdSugs.querySelectorAll('.sug-item').forEach(el => el.addEventListener('click', () => { switchTab(el.dataset.id); closeCmd(); }));
+
+  // Render History matches
+  html += historyMatches.map((h, i) => `
+    <div class="sug-item${(!tabMatches.length && i === 0) ? ' active' : ''}" data-type="history" data-url="${h.url}">
+      ${h.favicon ? `<img class="sug-fav" src="${h.favicon}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : `<img class="sug-fav" style="display:none">`}
+      <div class="sug-fav-letter" ${h.favicon ? 'style="display:none"' : ''}>${domainLetter(h.url || '')}</div>
+      <div class="sug-body"><span class="sug-title">${esc(h.title)}</span><span class="sug-url">${esc(h.url)}</span></div>
+      <span class="sug-action">Visit Site ↵</span>
+    </div>`).join('');
+
+  cmdSugs.innerHTML = html;
+  
+  cmdSugs.querySelectorAll('.sug-item').forEach(el => {
+    el.addEventListener('click', () => {
+      if (el.dataset.type === 'tab') {
+        switchTab(el.dataset.id);
+      } else {
+        navigateTab(activeTabId, el.dataset.url);
+      }
+      closeCmd();
+    });
+  });
 }
 
 cmdInput.addEventListener('input', () => { renderSugs(cmdInput.value); });

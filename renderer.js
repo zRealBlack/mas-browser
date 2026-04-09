@@ -68,6 +68,8 @@ const dlListEl = $('#dl-list');
 const btnDl = $('#btn-downloads');
 const dlOverlay = $('#downloads-overlay');
 const btnProfileActive = $('#btn-profile-active');
+const historyOverlay = $('#history-overlay');
+const historyList = $('#history-list');
 
 // ── Helpers ───────────────────────────────────────────
 function genId() { return `t${++tabIdCounter}`; }
@@ -321,6 +323,62 @@ $('#pe-save-btn').addEventListener('click', () => {
 });
 
 
+// ── History ───────────────────────────────────────────
+function openHistory() {
+  historyOverlay.classList.remove('hidden');
+  renderHistory();
+}
+function closeHistory() {
+  historyOverlay.classList.add('hidden');
+}
+
+function renderHistory() {
+  if (!historyList) return;
+  
+  if (browsingHistory.length === 0) {
+    historyList.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.6;">No history yet</div>';
+    return;
+  }
+
+  // Group by date
+  const groups = {};
+  browsingHistory.forEach(h => {
+    const d = new Date(h.time).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    if (!groups[d]) groups[d] = [];
+    groups[d].push(h);
+  });
+
+  let html = '';
+  for (const date in groups) {
+    html += `<div class="history-day-hdr">${date}</div>`;
+    html += groups[date].map(h => `
+      <div class="history-item" data-url="${h.url}">
+        ${h.favicon ? `<img class="hi-fav" src="${h.favicon}" onerror="this.src='https://www.google.com/favicon.ico'">` : `<div class="hi-fav" style="background:var(--bg2); display:flex; align-items:center; justify-content:center; font-size:10px;">${domainLetter(h.url)}</div>`}
+        <div class="hi-info">
+          <div class="hi-title">${esc(h.title)}</div>
+          <div class="hi-url">${esc(h.url)}</div>
+        </div>
+        <div class="hi-time">${new Date(h.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+      </div>
+    `).join('');
+  }
+  historyList.innerHTML = html;
+
+  historyList.querySelectorAll('.history-item').forEach(el => {
+    el.addEventListener('click', () => {
+      createTab(el.dataset.url);
+      closeHistory();
+    });
+  });
+}
+
+$('#history-close').addEventListener('click', closeHistory);
+$('#history-backdrop').addEventListener('click', closeHistory);
+
+window.openHistory = openHistory;
+
+$('#mi-history').addEventListener('click', () => { toggleMenu(false); openHistory(); });
+
 $('#btn-new-profile').addEventListener('click', async () => {
   const name = await customPrompt('Enter profile name:');
   if (!name) return;
@@ -329,6 +387,7 @@ $('#btn-new-profile').addEventListener('click', async () => {
   save('mas-profiles', profiles);
   renderProfiles();
 });
+
 
 // ── Settings Panel ────────────────────────────────────
 function openSettings() { settingsOverlay.classList.remove('hidden'); renderProfiles(); renderSwatches(); syncToggleUI(); }
@@ -928,6 +987,7 @@ document.addEventListener('keydown', e => {
   const modKey = isMac ? e.metaKey : e.ctrlKey;
   if (modKey && e.key === 'l') { e.preventDefault(); openCmd(); }
   if (modKey && e.key === 't') { e.preventDefault(); createTab(''); }
+  if (modKey && e.key === 'h') { e.preventDefault(); openHistory(); }
   if (modKey && e.key === 'w') { e.preventDefault(); if (activeTabId) closeTab(activeTabId); }
   if (modKey && e.key === 'n') { e.preventDefault(); if (e.shiftKey) window.electronAPI.newIncognito(); else window.electronAPI.newWindow(); }
   if (modKey && e.key === ',') { e.preventDefault(); openSettings(); }

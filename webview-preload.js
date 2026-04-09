@@ -2,8 +2,10 @@ const { ipcRenderer } = require('electron');
 
 let creds = null;
 
-// Request credentials for this domain
-ipcRenderer.invoke('get-passwords', location.hostname).then(c => {
+// Request credentials for this domain from the host (renderer) to get profile-scoped passwords
+ipcRenderer.sendToHost('get-creds', location.hostname);
+
+ipcRenderer.on('fill-creds', (e, c) => {
     creds = c;
     if (creds && creds.length > 0) {
         setTimeout(autoFill, 500);

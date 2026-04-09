@@ -11,13 +11,6 @@ let savedPasswords = {};
 if (fs.existsSync(passwordsFile)) {
   try { savedPasswords = JSON.parse(fs.readFileSync(passwordsFile, 'utf-8')); } catch(e){}
 }
-function savePassword(domain, user, pass) {
-  if (!savedPasswords[domain]) savedPasswords[domain] = [];
-  const idx = savedPasswords[domain].findIndex(c => c.user === user);
-  if (idx !== -1) savedPasswords[domain][idx].pass = pass;
-  else savedPasswords[domain].push({user, pass});
-  fs.writeFileSync(passwordsFile, JSON.stringify(savedPasswords));
-}
 
 function createWindow(incognito = false) {
   const win = new BrowserWindow({
@@ -247,14 +240,24 @@ app.whenReady().then(() => {
     if (dl) dl.cancel();
   });
 
-  ipcMain.handle('get-passwords', (e, domain) => {
-    return savedPasswords[domain] || [];
+  ipcMain.handle('get-passwords', (e, args) => {
+    const pCreds = savedPasswords[args.profileId] || {};
+    return pCreds[args.domain] || [];
   });
   
   ipcMain.handle('get-app-path', () => app.getAppPath());
   
   ipcMain.on('save-password-main', (e, data) => {
-     savePassword(data.domain, data.user, data.pass);
+     const pId = data.profileId || 'default';
+     if (!savedPasswords[pId]) savedPasswords[pId] = {};
+     if (!savedPasswords[pId][data.domain]) savedPasswords[pId][data.domain] = [];
+     
+     const arr = savedPasswords[pId][data.domain];
+     const idx = arr.findIndex(c => c.user === data.user);
+     if (idx !== -1) arr[idx].pass = data.pass;
+     else arr.push({user: data.user, pass: data.pass});
+     
+     fs.writeFileSync(passwordsFile, JSON.stringify(savedPasswords));
   });
 });
 

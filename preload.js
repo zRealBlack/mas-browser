@@ -35,5 +35,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onWebviewContextMenu: cb => ipcRenderer.on('ctx-webview-menu', (e, data) => cb(e, data)),
   getAppPath: () => ipcRenderer.invoke('get-app-path'),
   savePassword: data => ipcRenderer.send('save-password-main', data),
+  getPasswords: (domain, profileId) => ipcRenderer.invoke('get-passwords', { domain, profileId }),
 });
 

@@ -77,9 +77,6 @@ function applyTheme() {
   window.electronAPI.setTheme(mode);
   save('mas-theme', theme);
 
-  const logo = document.getElementById('main-app-logo');
-  const ntLogo = document.getElementById('nt-logo-img');
-  if (logo) logo.style.filter = mode === 'dark' ? 'invert(1) brightness(2)' : 'none';
   if (ntLogo) ntLogo.style.filter = mode === 'dark' ? 'invert(1) brightness(2)' : 'none';
 }
 
@@ -102,15 +99,43 @@ function renderProfiles() {
   if (!container) return;
   container.innerHTML = profiles.map(p =>
     `<div class="st-profile-row" data-pid="${p.id}">
-      <div><div class="pr-name">${esc(p.name)}</div><div class="pr-sub">${p.id === activeProfileId ? 'Active profile' : 'Click to switch'}</div></div>
-      <span class="pr-chev">›</span>
+      <div class="pr-icon-wrap" style="font-size:24px; margin-right:12px; cursor:pointer;" title="Change Icon">
+         ${esc(p.icon || '👤')}
+      </div>
+      <div style="flex:1;">
+         <div class="pr-name" style="cursor:pointer;" title="Rename Profile">${esc(p.name)}</div>
+         <div class="pr-sub">${p.id === activeProfileId ? 'Active profile' : 'Click Switch to use'}</div>
+      </div>
+      ${p.id !== activeProfileId ? `<button class="st-btn-teal st-btn-sm" style="padding:4px 12px; font-size:12px; border-radius:4px;" data-switch="${p.id}">Switch</button>` : ''}
     </div>`
   ).join('');
-  container.querySelectorAll('.st-profile-row').forEach(el => {
-    el.addEventListener('click', () => {
-      activeProfileId = el.dataset.pid;
+
+  container.querySelectorAll('.pr-icon-wrap').forEach(el => {
+    el.addEventListener('click', e => {
+      const pid = e.target.closest('.st-profile-row').dataset.pid;
+      const p = profiles.find(x => x.id === pid);
+      const newIcon = prompt('Enter an emoji or character for profile icon:', p.icon || '👤');
+      if (newIcon) { p.icon = newIcon; save('mas-profiles', profiles); renderProfiles(); }
+    });
+  });
+
+  container.querySelectorAll('.pr-name').forEach(el => {
+    el.addEventListener('click', e => {
+      const pid = e.target.closest('.st-profile-row').dataset.pid;
+      const p = profiles.find(x => x.id === pid);
+      const newName = prompt('Enter new profile name:', p.name);
+      if (newName) { p.name = newName; save('mas-profiles', profiles); renderProfiles(); }
+    });
+  });
+
+  container.querySelectorAll('[data-switch]').forEach(el => {
+    el.addEventListener('click', e => {
+      const pid = e.target.closest('button').dataset.switch;
+      if (pid === activeProfileId) return;
+      saveTabs();
+      activeProfileId = pid;
       save('mas-active-profile', activeProfileId);
-      renderProfiles();
+      location.reload();
     });
   });
 }
@@ -119,7 +144,7 @@ $('#btn-new-profile').addEventListener('click', () => {
   const name = prompt('Enter profile name:');
   if (!name) return;
   const id = 'profile-' + Date.now();
-  profiles.push({ id, name });
+  profiles.push({ id, name, icon: '👤' });
   save('mas-profiles', profiles);
   renderProfiles();
 });
@@ -568,8 +593,15 @@ function wireWebview(wv, id) {
   wv.addEventListener('did-start-loading', () => setLoading(id, true));
   wv.addEventListener('did-stop-loading', () => setLoading(id, false));
   wv.addEventListener('new-window', e => { e.preventDefault(); createTab(e.url); });
-  wv.addEventListener('ipc-message', e => {
-     if (e.channel === 'save-password') window.electronAPI.savePassword(e.args[0]);
+  wv.addEventListener('ipc-message', async e => {
+     if (e.channel === 'save-password') {
+         const data = e.args[0];
+         data.profileId = activeProfileId;
+         window.electronAPI.savePassword(data);
+     } else if (e.channel === 'get-creds') {
+         const creds = await window.electronAPI.getPasswords(e.args[0], activeProfileId);
+         wv.send('fill-creds', creds);
+     }
   });
 }
 

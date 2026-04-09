@@ -24,7 +24,14 @@ let account = JSON.parse(localStorage.getItem('mas-account'));
 let theme = JSON.parse(localStorage.getItem('mas-theme') || '{"mode":"light","accentIdx":0}');
 let settings = JSON.parse(localStorage.getItem('mas-settings') || '{"sidebarSync":false,"backdrop":"none","pip":false}');
 let profiles = JSON.parse(localStorage.getItem('mas-profiles') || '[{"id":"default","name":"Default"}]');
-let activeProfileId = localStorage.getItem('mas-active-profile') || 'default';
+let activeProfileId = 'default';
+try {
+  let pRAW = localStorage.getItem('mas-active-profile');
+  if (pRAW) {
+     if (pRAW.startsWith('"')) activeProfileId = JSON.parse(pRAW);
+     else activeProfileId = pRAW;
+  }
+} catch(e){}
 let isIncognito = false;
 const incognitoPartition = 'incognito-' + Date.now();
 
@@ -76,7 +83,9 @@ function applyTheme() {
   document.documentElement.style.setProperty('--sidebar-bg', sbColor);
   window.electronAPI.setTheme(mode);
   save('mas-theme', theme);
-
+  
+  const logo = document.getElementById('main-app-logo');
+  if (logo) logo.style.filter = mode === 'dark' ? 'invert(1) brightness(2)' : 'none';
   if (ntLogo) ntLogo.style.filter = mode === 'dark' ? 'invert(1) brightness(2)' : 'none';
 }
 
@@ -104,11 +113,27 @@ function renderProfiles() {
       </div>
       <div style="flex:1;">
          <div class="pr-name" style="cursor:pointer;" title="Rename Profile">${esc(p.name)}</div>
+         <div class="pr-sub" style="font-family: monospace; font-size: 10px; opacity: 0.7;">ID: ${p.id}</div>
          <div class="pr-sub">${p.id === activeProfileId ? 'Active profile' : 'Click Switch to use'}</div>
       </div>
+      <button class="st-btn-teal st-btn-sm pr-edit-btn" style="padding:4px 12px; font-size:12px; border-radius:4px; margin-right:6px; background: transparent; color: var(--text); border: 1px solid var(--border);" data-edit="${p.id}">Edit</button>
       ${p.id !== activeProfileId ? `<button class="st-btn-teal st-btn-sm" style="padding:4px 12px; font-size:12px; border-radius:4px;" data-switch="${p.id}">Switch</button>` : ''}
     </div>`
   ).join('');
+
+  container.querySelectorAll('.pr-edit-btn').forEach(el => {
+    el.addEventListener('click', e => {
+      const pid = e.target.dataset.edit;
+      const p = profiles.find(x => x.id === pid);
+      if(!p) return;
+      const newName = prompt('Enter a new name for this profile:', p.name);
+      if (newName) p.name = newName;
+      const newIcon = prompt('Enter an emoji or character icon:', p.icon || '👤');
+      if (newIcon) p.icon = newIcon;
+      save('mas-profiles', profiles);
+      renderProfiles();
+    });
+  });
 
   container.querySelectorAll('.pr-icon-wrap').forEach(el => {
     el.addEventListener('click', e => {
@@ -134,7 +159,7 @@ function renderProfiles() {
       if (pid === activeProfileId) return;
       saveTabs();
       activeProfileId = pid;
-      save('mas-active-profile', activeProfileId);
+      localStorage.setItem('mas-active-profile', activeProfileId);
       location.reload();
     });
   });
@@ -143,7 +168,7 @@ function renderProfiles() {
 $('#btn-new-profile').addEventListener('click', () => {
   const name = prompt('Enter profile name:');
   if (!name) return;
-  const id = 'profile-' + Date.now();
+  const id = 'pr-' + Math.random().toString(36).substr(2, 9);
   profiles.push({ id, name, icon: '👤' });
   save('mas-profiles', profiles);
   renderProfiles();

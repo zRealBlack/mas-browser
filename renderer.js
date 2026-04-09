@@ -33,6 +33,11 @@ try {
      else activeProfileId = pRAW;
   }
 } catch(e){}
+
+// Ensure activeProfileId exists in profiles to avoid UI mismatch
+if (!profiles.find(x => x.id === activeProfileId)) {
+  activeProfileId = profiles[0].id;
+}
 let isIncognito = false;
 const incognitoPartition = 'incognito-' + Date.now();
 
@@ -210,11 +215,14 @@ function renderProfileRow(p, isActive) {
 
 function updateActiveProfileUI() {
   const p = profiles.find(x => x.id === activeProfileId);
-  if (!p) return;
+  if (!p) {
+    btnProfileActive.textContent = '👤';
+    return;
+  }
   if (p.avatar) {
     btnProfileActive.innerHTML = `<img src="${p.avatar}" style="width:100%; height:100%; object-fit:cover;">`;
   } else {
-    btnProfileActive.textContent = p.icon || '👤';
+    btnProfileActive.innerHTML = esc(p.icon || '👤');
   }
 }
 
@@ -871,7 +879,13 @@ function updateMeta(id, info) {
 
 function saveTabs() {
   if (isIncognito) return;
-  const tState = tabs.map(t => ({ url: t.url, title: t.title, pinned: t.pinned, favicon: t.favicon }));
+  const tState = tabs.map(t => ({ 
+    url: t.url, 
+    title: t.title, 
+    pinned: t.pinned, 
+    favicon: t.favicon,
+    active: t.id === activeTabId 
+  }));
   save('mas-saved-tabs-' + activeProfileId, tState);
 }
 
@@ -1223,7 +1237,14 @@ async function boot() {
        const savedTabs = JSON.parse(saved);
        if (savedTabs && savedTabs.length > 0) {
            savedTabs.forEach(t => createTab(t.url, { pinned: t.pinned, activate: false, title: t.title, favicon: t.favicon }));
-           if (tabs.length > 0) switchTab(tabs[tabs.length-1].id);
+           const activeSaved = savedTabs.find(t => t.active);
+           if (activeSaved) {
+              const matchingTab = tabs.find(t => t.url === activeSaved.url && t.title === activeSaved.title);
+              if (matchingTab) switchTab(matchingTab.id);
+              else if (tabs.length > 0) switchTab(tabs[tabs.length-1].id);
+           } else if (tabs.length > 0) {
+              switchTab(tabs[tabs.length-1].id);
+           }
        } else {
            createTab('https://www.google.com');
        }
@@ -1231,6 +1252,7 @@ async function boot() {
   } else {
      createTab('https://www.google.com');
   }
+  updateActiveProfileUI();
 }
 boot();
 

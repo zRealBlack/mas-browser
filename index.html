@@ -46,6 +46,7 @@
             <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
           </svg>
         </button>
+        <button class="sf-btn" id="btn-profile-active" title="Profile Details" style="padding:0; overflow:hidden; border-radius:50%; width:24px; height:24px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:12px;">👤</button>
         <button class="sf-btn" id="btn-settings" title="Settings (Ctrl+,)">
           <svg width="16" height="16" viewBox="0 0 16 16">
             <circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.3" />
@@ -436,6 +437,47 @@
         <path d="M6 2H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2M10 11l3-3-3-3M6 8h7" fill="none" stroke="currentColor"
           stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
       </svg><span>Sign Out</span></div>
+  </div>
+
+  <!-- ========== PROFILE EDIT MODAL ========== -->
+  <div id="profile-edit-overlay" class="hidden">
+    <div id="profile-edit-backdrop"></div>
+    <div id="profile-edit-panel">
+      <button id="profile-edit-close" title="Close">&times;</button>
+      <div class="st-scroll">
+        <h2 class="st-title">Edit Profile</h2>
+        
+        <div class="st-card" style="display:flex; flex-direction:column; align-items:center; gap:16px; padding:24px;">
+          <div id="pe-avatar-preview" style="width:80px; height:80px; border-radius:50%; background:var(--bg2); display:flex; align-items:center; justify-content:center; font-size:40px; overflow:hidden; border:2px solid var(--border);">👤</div>
+          <button class="st-btn-teal st-btn-sm" id="btn-pe-upload">Upload Photo</button>
+          <input type="file" id="pe-file-input" accept="image/*" style="display:none;">
+        </div>
+
+        <div class="st-card">
+          <div style="margin-bottom:8px; font-weight:500;">Profile Name</div>
+          <input type="text" id="pe-name-input" class="st-input" style="width:100%;" placeholder="Enter name...">
+        </div>
+
+        <div class="st-card">
+          <div style="margin-bottom:8px; font-weight:500;">Profile ID (Permanent)</div>
+          <input type="text" id="pe-id-display" class="st-input" style="width:100%; opacity:0.6;" readonly>
+        </div>
+
+        <div class="st-card">
+          <div style="margin-bottom:8px; font-weight:500;">Browser Language</div>
+          <select id="pe-lang-select" class="st-select" style="width:100%;">
+            <option value="en">English</option>
+            <option value="ar">Arabic</option>
+            <option value="fr">French</option>
+            <option value="es">Spanish</option>
+          </select>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:20px;">
+          <button class="st-btn-teal" id="pe-save-btn">Save Changes</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ========== CONTEXT MENU ========== -->

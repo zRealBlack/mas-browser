@@ -38,6 +38,8 @@ const incognitoPartition = 'incognito-' + Date.now();
 let tabs = [], activeTabId = null, sidebarOpen = true, tabIdCounter = 0;
 let menuOpen = false, siteInfoOpen = false, siMoreOpen = false, downloadsOpen = false;
 let downloads = JSON.parse(localStorage.getItem('mas-downloads') || '[]');
+let peEditingId = null;
+let peAvatarData = null;
 
 // ── DOM refs ──────────────────────────────────────────
 const $ = s => document.querySelector(s);
@@ -63,6 +65,7 @@ const downloadsPanel = $('#downloads-panel');
 const dlListEl = $('#dl-list');
 const btnDl = $('#btn-downloads');
 const dlOverlay = $('#downloads-overlay');
+const btnProfileActive = $('#btn-profile-active');
 
 // ── Helpers ───────────────────────────────────────────
 function genId() { return `t${++tabIdCounter}`; }
@@ -118,6 +121,13 @@ function applyTheme() {
   const logo = document.getElementById('main-app-logo');
   if (logo) logo.style.filter = mode === 'dark' ? 'invert(1) brightness(2)' : 'none';
   if (ntLogo) ntLogo.style.filter = mode === 'dark' ? 'invert(1) brightness(2)' : 'none';
+  updateActiveProfileUI();
+  applyLanguage();
+}
+
+function applyLanguage() {
+  const p = profiles.find(x => x.id === activeProfileId);
+  if (p && p.lang) document.documentElement.setAttribute('lang', p.lang);
 }
 
 function renderSwatches() {
@@ -139,50 +149,18 @@ function renderProfiles() {
   if (!container) return;
   container.innerHTML = profiles.map(p =>
     `<div class="st-profile-row" data-pid="${p.id}">
-      <div class="pr-icon-wrap" style="font-size:24px; margin-right:12px; cursor:pointer;" title="Change Icon">
-         ${esc(p.icon || '👤')}
+      <div class="pe-avatar-item" style="width:40px; height:40px; border-radius:50%; background:var(--bg2); display:flex; align-items:center; justify-content:center; font-size:20px; overflow:hidden; border:1px solid var(--border); margin-right:12px;">
+         ${p.avatar ? `<img src="${p.avatar}" style="width:100%; height:100%; object-fit:cover;">` : esc(p.icon || '👤')}
       </div>
       <div style="flex:1;">
-         <div class="pr-name" style="cursor:pointer;" title="Rename Profile">${esc(p.name)}</div>
+         <div class="pr-name" style="font-weight:600;">${esc(p.name)}</div>
          <div class="pr-sub" style="font-family: monospace; font-size: 10px; opacity: 0.7;">ID: ${p.id}</div>
          <div class="pr-sub">${p.id === activeProfileId ? 'Active profile' : 'Click Switch to use'}</div>
       </div>
-      <button class="st-btn-teal st-btn-sm pr-edit-btn" style="padding:4px 12px; font-size:12px; border-radius:4px; margin-right:6px; background: transparent; color: var(--text); border: 1px solid var(--border);" data-edit="${p.id}">Edit</button>
+      <button class="st-btn-teal st-btn-sm" style="padding:4px 12px; font-size:12px; border-radius:4px; margin-right:6px; background: transparent; color: var(--text); border: 1px solid var(--border);" onclick="openProfileEdit('${p.id}')">Edit</button>
       ${p.id !== activeProfileId ? `<button class="st-btn-teal st-btn-sm" style="padding:4px 12px; font-size:12px; border-radius:4px;" data-switch="${p.id}">Switch</button>` : ''}
     </div>`
   ).join('');
-
-  container.querySelectorAll('.pr-edit-btn').forEach(el => {
-    el.addEventListener('click', async e => {
-      const pid = e.target.dataset.edit;
-      const p = profiles.find(x => x.id === pid);
-      if(!p) return;
-      const newName = await customPrompt('Enter a new name for this profile:', p.name);
-      if (newName) p.name = newName;
-      const newIcon = await customPrompt('Enter an emoji or character icon:', p.icon || '👤');
-      if (newIcon) p.icon = newIcon;
-      save('mas-profiles', profiles);
-      renderProfiles();
-    });
-  });
-
-  container.querySelectorAll('.pr-icon-wrap').forEach(el => {
-    el.addEventListener('click', async e => {
-      const pid = e.target.closest('.st-profile-row').dataset.pid;
-      const p = profiles.find(x => x.id === pid);
-      const newIcon = await customPrompt('Enter an emoji or character for profile icon:', p.icon || '👤');
-      if (newIcon) { p.icon = newIcon; save('mas-profiles', profiles); renderProfiles(); }
-    });
-  });
-
-  container.querySelectorAll('.pr-name').forEach(el => {
-    el.addEventListener('click', async e => {
-      const pid = e.target.closest('.st-profile-row').dataset.pid;
-      const p = profiles.find(x => x.id === pid);
-      const newName = await customPrompt('Enter new profile name:', p.name);
-      if (newName) { p.name = newName; save('mas-profiles', profiles); renderProfiles(); }
-    });
-  });
 
   container.querySelectorAll('[data-switch]').forEach(el => {
     el.addEventListener('click', e => {
@@ -195,6 +173,72 @@ function renderProfiles() {
     });
   });
 }
+
+function updateActiveProfileUI() {
+  const p = profiles.find(x => x.id === activeProfileId);
+  if (!p) return;
+  if (p.avatar) {
+    btnProfileActive.innerHTML = `<img src="${p.avatar}" style="width:100%; height:100%; object-fit:cover;">`;
+  } else {
+    btnProfileActive.textContent = p.icon || '👤';
+  }
+}
+
+btnProfileActive.addEventListener('click', () => openProfileEdit(activeProfileId));
+
+const peOverlay = $('#profile-edit-overlay');
+const peNameInput = $('#pe-name-input');
+const peIdDisplay = $('#pe-id-display');
+const peLangSelect = $('#pe-lang-select');
+const peAvatarPreview = $('#pe-avatar-preview');
+const peFileInput = $('#pe-file-input');
+
+window.openProfileEdit = (pid) => {
+  const p = profiles.find(x => x.id === pid);
+  if (!p) return;
+  peEditingId = pid;
+  peNameInput.value = p.name || '';
+  peIdDisplay.value = p.id;
+  peLangSelect.value = p.lang || 'en';
+  peAvatarData = p.avatar || null;
+  
+  if (peAvatarData) peAvatarPreview.innerHTML = `<img src="${peAvatarData}" style="width:100%; height:100%; object-fit:cover;">`;
+  else peAvatarPreview.textContent = p.icon || '👤';
+  
+  peOverlay.classList.remove('hidden');
+  peOverlay.style.display = 'flex';
+};
+
+$('#profile-edit-close').addEventListener('click', () => { peOverlay.classList.add('hidden'); peOverlay.style.display = 'none'; });
+$('#profile-edit-backdrop').addEventListener('click', () => { peOverlay.classList.add('hidden'); peOverlay.style.display = 'none'; });
+
+$('#btn-pe-upload').addEventListener('click', () => peFileInput.click());
+
+peFileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    peAvatarData = ev.target.result;
+    peAvatarPreview.innerHTML = `<img src="${peAvatarData}" style="width:100%; height:100%; object-fit:cover;">`;
+  };
+  reader.readAsDataURL(file);
+});
+
+$('#pe-save-btn').addEventListener('click', () => {
+  const p = profiles.find(x => x.id === peEditingId);
+  if (p) {
+    p.name = peNameInput.value.trim() || p.name;
+    p.lang = peLangSelect.value;
+    p.avatar = peAvatarData;
+    save('mas-profiles', profiles);
+    renderProfiles();
+    updateActiveProfileUI();
+    peOverlay.classList.add('hidden');
+    peOverlay.style.display = 'none';
+  }
+});
+
 
 $('#btn-new-profile').addEventListener('click', async () => {
   const name = await customPrompt('Enter profile name:');

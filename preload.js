@@ -33,5 +33,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onNewTabFromMain: cb => ipcRenderer.on('new-tab-from-main', (_, url) => cb(url)),
   viewSource: url => ipcRenderer.send('view-source', url),
   onWebviewContextMenu: cb => ipcRenderer.on('ctx-webview-menu', (e, data) => cb(e, data)),
+  getAppPath: () => ipcRenderer.invoke('get-app-path'),
+  savePassword: data => ipcRenderer.send('save-password-main', data),
 });
 

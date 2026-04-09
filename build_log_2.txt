@@ -1,0 +1,139 @@
+
+> arc-browser@1.0.0 build
+> electron-builder --win
+
+  ΓÇó electron-builder  version=26.8.1 os=10.0.22631
+  ΓÇó loaded configuration  file=package.json ("build" field)
+  ΓÇó author is missed in the package.json  appPackageFile=C:\Users\yasso\.gemini\antigravity\scratch\arc-browser\package.json
+  ΓÇó executing @electron/rebuild  electronVersion=33.4.11 arch=x64 buildFromSource=false workspaceRoot=C:\Users\yasso\.gemini\antigravity\scratch\arc-browser projectDir=./ appDir=./
+  ΓÇó installing native dependencies  arch=x64
+  ΓÇó completed installing native dependencies
+  ΓÇó packaging       platform=win32 arch=x64 electron=33.4.11 appOutDir=dist\win-unpacked
+  ΓÇó searching for node modules  pm=npm searchDir=C:\Users\yasso\.gemini\antigravity\scratch\arc-browser
+(node:33740) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  ΓÇó updating asar integrity executable resource  executablePath=dist\win-unpacked\MAS Browser.exe
+  ΓÇó downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z size=5.6 MB parts=1
+  ΓÇó downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z duration=1.706s
+  Γ¿» cannot execute  cause=exit status 2
+                    out=
+    7-Zip (a) 21.07 (x64) : Copyright (c) 1999-2021 Igor Pavlov : 2021-12-26
+    
+    Scanning the drive for archives:
+    1 file, 5635384 bytes (5504 KiB)
+    
+    Extracting archive: C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\494299155.7z
+    --
+    Path = C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\494299155.7z
+    Type = 7z
+    Physical Size = 5635384
+    Headers Size = 1492
+    Method = LZMA2:24m LZMA:20 BCJ2
+    Solid = +
+    Blocks = 2
+    
+    
+    Sub items Errors: 2
+    
+    Archives with Errors: 1
+    
+    Sub items Errors: 2
+    
+                    errorOut=ERROR: Cannot create symbolic link : A required privilege is not held by the client. : C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\494299155\darwin\10.12\lib\libcrypto.dylib
+    ERROR: Cannot create symbolic link : A required privilege is not held by the client. : C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\494299155\darwin\10.12\lib\libssl.dylib
+    
+                    command='C:\Users\yasso\.gemini\antigravity\scratch\arc-browser\node_modules\7zip-bin\win\x64\7za.exe' x -snld -bd 'C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\494299155.7z' '-oC:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\494299155'
+                    workingDir=C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign
+  ΓÇó downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z size=5.6 MB parts=1
+  ΓÇó downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z duration=1.493s
+  Γ¿» cannot execute  cause=exit status 2
+                    out=
+    7-Zip (a) 21.07 (x64) : Copyright (c) 1999-2021 Igor Pavlov : 2021-12-26
+    
+    Scanning the drive for archives:
+    1 file, 5635384 bytes (5504 KiB)
+    
+    Extracting archive: C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\516138843.7z
+    --
+    Path = C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\516138843.7z
+    Type = 7z
+    Physical Size = 5635384
+    Headers Size = 1492
+    Method = LZMA2:24m LZMA:20 BCJ2
+    Solid = +
+    Blocks = 2
+    
+    
+    Sub items Errors: 2
+    
+    Archives with Errors: 1
+    
+    Sub items Errors: 2
+    
+                    errorOut=ERROR: Cannot create symbolic link : A required privilege is not held by the client. : C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\516138843\darwin\10.12\lib\libcrypto.dylib
+    ERROR: Cannot create symbolic link : A required privilege is not held by the client. : C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\516138843\darwin\10.12\lib\libssl.dylib
+    
+                    command='C:\Users\yasso\.gemini\antigravity\scratch\arc-browser\node_modules\7zip-bin\win\x64\7za.exe' x -snld -bd 'C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\516138843.7z' '-oC:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\516138843'
+                    workingDir=C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign
+  ΓÇó downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z size=5.6 MB parts=1
+  ΓÇó downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z duration=2.078s
+  Γ¿» cannot execute  cause=exit status 2
+                    out=
+    7-Zip (a) 21.07 (x64) : Copyright (c) 1999-2021 Igor Pavlov : 2021-12-26
+    
+    Scanning the drive for archives:
+    1 file, 5635384 bytes (5504 KiB)
+    
+    Extracting archive: C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\281920515.7z
+    --
+    Path = C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\281920515.7z
+    Type = 7z
+    Physical Size = 5635384
+    Headers Size = 1492
+    Method = LZMA2:24m LZMA:20 BCJ2
+    Solid = +
+    Blocks = 2
+    
+    
+    Sub items Errors: 2
+    
+    Archives with Errors: 1
+    
+    Sub items Errors: 2
+    
+                    errorOut=ERROR: Cannot create symbolic link : A required privilege is not held by the client. : C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\281920515\darwin\10.12\lib\libcrypto.dylib
+    ERROR: Cannot create symbolic link : A required privilege is not held by the client. : C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\281920515\darwin\10.12\lib\libssl.dylib
+    
+                    command='C:\Users\yasso\.gemini\antigravity\scratch\arc-browser\node_modules\7zip-bin\win\x64\7za.exe' x -snld -bd 'C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\281920515.7z' '-oC:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\281920515'
+                    workingDir=C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign
+  ΓÇó downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z size=5.6 MB parts=1
+  ΓÇó downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z duration=1.665s
+  Γ¿» cannot execute  cause=exit status 2
+                    out=
+    7-Zip (a) 21.07 (x64) : Copyright (c) 1999-2021 Igor Pavlov : 2021-12-26
+    
+    Scanning the drive for archives:
+    1 file, 5635384 bytes (5504 KiB)
+    
+    Extracting archive: C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\563438495.7z
+    --
+    Path = C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\563438495.7z
+    Type = 7z
+    Physical Size = 5635384
+    Headers Size = 1492
+    Method = LZMA2:24m LZMA:20 BCJ2
+    Solid = +
+    Blocks = 2
+    
+    
+    Sub items Errors: 2
+    
+    Archives with Errors: 1
+    
+    Sub items Errors: 2
+    
+                    errorOut=ERROR: Cannot create symbolic link : A required privilege is not held by the client. : C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\563438495\darwin\10.12\lib\libcrypto.dylib
+    ERROR: Cannot create symbolic link : A required privilege is not held by the client. : C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\563438495\darwin\10.12\lib\libssl.dylib
+    
+                    command='C:\Users\yasso\.gemini\antigravity\scratch\arc-browser\node_modules\7zip-bin\win\x64\7za.exe' x -snld -bd 'C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\563438495.7z' '-oC:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign\563438495'
+                    workingDir=C:\Users\yasso\AppData\Local\electron-builder\Cache\winCodeSign

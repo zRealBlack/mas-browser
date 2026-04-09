@@ -1,0 +1,29 @@
+
+> arc-browser@1.0.0 build
+> electron-builder --win
+
+  ΓÇó electron-builder  version=26.8.1 os=10.0.22631
+  ΓÇó loaded configuration  file=package.json ("build" field)
+  ΓÇó author is missed in the package.json  appPackageFile=C:\Users\yasso\.gemini\antigravity\scratch\arc-browser\package.json
+  ΓÇó executing @electron/rebuild  electronVersion=33.4.11 arch=x64 buildFromSource=false workspaceRoot=C:\Users\yasso\.gemini\antigravity\scratch\arc-browser projectDir=./ appDir=./
+  ΓÇó installing native dependencies  arch=x64
+  ΓÇó completed installing native dependencies
+  ΓÇó packaging       platform=win32 arch=x64 electron=33.4.11 appOutDir=dist\win-unpacked
+  ΓÇó searching for node modules  pm=npm searchDir=C:\Users\yasso\.gemini\antigravity\scratch\arc-browser
+(node:20280) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  ΓÇó updating asar integrity executable resource  executablePath=dist\win-unpacked\MAS Browser.exe
+  ΓÇó downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z size=5.6 MB parts=1
+  ΓÇó downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z duration=1.669s
+  ΓÇó signing with signtool.exe  path=dist\win-unpacked\MAS Browser.exe
+  ΓÇó building        target=nsis file=dist\MAS Browser Setup 1.0.0.exe archs=x64 oneClick=false perMachine=false
+  ΓÇó downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-3.0.4.1/nsis-3.0.4.1.7z size=1.3 MB parts=1
+  ΓÇó downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-3.0.4.1/nsis-3.0.4.1.7z duration=1.033s
+  ΓÇó signing with signtool.exe  path=dist\win-unpacked\resources\elevate.exe
+  ΓÇó downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-resources-3.4.1/nsis-resources-3.4.1.7z size=731 kB parts=1
+  ΓÇó downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-resources-3.4.1/nsis-resources-3.4.1.7z duration=974ms
+  ΓÇó signing with signtool.exe  path=dist\MAS Browser Setup 1.0.0.__uninstaller.exe
+  ΓÇó signing with signtool.exe  path=dist\MAS Browser Setup 1.0.0.exe
+  ΓÇó building block map  blockMapFile=dist\MAS Browser Setup 1.0.0.exe.blockmap
+  ΓÇó building        target=portable file=dist\MAS Browser 1.0.0.exe archs=x64
+  ΓÇó signing with signtool.exe  path=dist\MAS Browser 1.0.0.exe

@@ -448,7 +448,7 @@ function getPartition() {
 function createTab(url, opts = {}) {
   const id = genId();
   const { pinned = false, activate = true } = opts;
-  const tab = { id, url: url || '', title: 'New Tab', favicon: null, pinned, loading: false };
+  const tab = { id, url: url || '', title: opts.title || 'New Tab', favicon: opts.favicon || null, pinned, loading: false };
   tabs.push(tab);
 
   if (url) {
@@ -456,10 +456,15 @@ function createTab(url, opts = {}) {
     wv.id = `wv-${id}`;
     wv.setAttribute('allowpopups', '');
     wv.setAttribute('partition', getPartition());
+    if (window.__webviewPreloadPath) {
+       wv.setAttribute('preload', window.__webviewPreloadPath);
+    }
     wv.src = toUrl(url);
     wireWebview(wv, id);
     webviewWrap.appendChild(wv);
   }
+
+  saveTabs();
 
   renderTabEl(tab);
   updateCount();
@@ -507,9 +512,11 @@ function closeTab(id) {
   if (tabs.length === 0) {
     activeTabId = null;
     document.getElementById('main-viewer').style.display = 'none';
+    saveTabs();
     return;
   }
   if (activeTabId === id) switchTab(tabs[Math.min(idx, tabs.length - 1)].id);
+  saveTabs();
 }
 
 function navigateTab(id, input) {
@@ -561,6 +568,9 @@ function wireWebview(wv, id) {
   wv.addEventListener('did-start-loading', () => setLoading(id, true));
   wv.addEventListener('did-stop-loading', () => setLoading(id, false));
   wv.addEventListener('new-window', e => { e.preventDefault(); createTab(e.url); });
+  wv.addEventListener('ipc-message', e => {
+     if (e.channel === 'save-password') window.electronAPI.savePassword(e.args[0]);
+  });
 }
 
 function updateMeta(id, info) {
@@ -583,6 +593,13 @@ function updateMeta(id, info) {
     if (tabEl) tabEl.classList.add('unread');
   }
   if (id === activeTabId) updateUrlBar(tab);
+  saveTabs();
+}
+
+function saveTabs() {
+  if (isIncognito) return;
+  const tState = tabs.map(t => ({ url: t.url, title: t.title, pinned: t.pinned, favicon: t.favicon }));
+  save('mas-saved-tabs-' + activeProfileId, tState);
 }
 
 function setLoading(id, v) {
@@ -878,7 +895,35 @@ window.electronAPI.onWebviewContextMenu((e, data) => {
 
 // ── Boot ──────────────────────────────────────────────
 applyTheme();
-createTab('https://www.google.com');
+
+async function boot() {
+  try {
+     const appPath = await window.electronAPI.getAppPath();
+     // Webview preload uses file:// scheme
+     window.__webviewPreloadPath = 'file://' + appPath.replace(/\\/g, '/') + '/webview-preload.js';
+  } catch(e) {}
+  
+  if (isIncognito) {
+      createTab('https://www.google.com');
+      return;
+  }
+  
+  const saved = localStorage.getItem('mas-saved-tabs-' + activeProfileId);
+  if (saved) {
+     try {
+       const savedTabs = JSON.parse(saved);
+       if (savedTabs && savedTabs.length > 0) {
+           savedTabs.forEach(t => createTab(t.url, { pinned: t.pinned, activate: false, title: t.title, favicon: t.favicon }));
+           if (tabs.length > 0) switchTab(tabs[tabs.length-1].id);
+       } else {
+           createTab('https://www.google.com');
+       }
+     } catch (e) { createTab('https://www.google.com'); }
+  } else {
+     createTab('https://www.google.com');
+  }
+}
+boot();
 
 if (isMac) {
   // Update tooltips and keyboard hints for Mac

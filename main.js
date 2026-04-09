@@ -5,6 +5,20 @@ const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 
+// Password Store
+const passwordsFile = path.join(app.getPath('userData'), 'mas-passwords.json');
+let savedPasswords = {};
+if (fs.existsSync(passwordsFile)) {
+  try { savedPasswords = JSON.parse(fs.readFileSync(passwordsFile, 'utf-8')); } catch(e){}
+}
+function savePassword(domain, user, pass) {
+  if (!savedPasswords[domain]) savedPasswords[domain] = [];
+  const idx = savedPasswords[domain].findIndex(c => c.user === user);
+  if (idx !== -1) savedPasswords[domain][idx].pass = pass;
+  else savedPasswords[domain].push({user, pass});
+  fs.writeFileSync(passwordsFile, JSON.stringify(savedPasswords));
+}
+
 function createWindow(incognito = false) {
   const win = new BrowserWindow({
     width: 1280, height: 860, minWidth: 800, minHeight: 500,
@@ -231,6 +245,16 @@ app.whenReady().then(() => {
   ipcMain.on('download-cancel', (e, id) => {
     const dl = activeDownloads.get(id);
     if (dl) dl.cancel();
+  });
+
+  ipcMain.handle('get-passwords', (e, domain) => {
+    return savedPasswords[domain] || [];
+  });
+  
+  ipcMain.handle('get-app-path', () => app.getAppPath());
+  
+  ipcMain.on('save-password-main', (e, data) => {
+     savePassword(data.domain, data.user, data.pass);
   });
 });
 

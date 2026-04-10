@@ -1293,6 +1293,15 @@ function initWhatsAppWidget() {
   waCloseBtn.addEventListener('click', () => {
     waWidget.classList.add('hidden');
   });
+
+  // Inject CSS to clean up WA interface
+  waPipWebview.addEventListener('dom-ready', () => {
+    waPipWebview.insertCSS(`
+      [data-testid="wa-web-browser-inactive-overlay"] { display: none !important; }
+      ._3uMse { display: none !important; }
+      .x1y332i5 { display: none !important; }
+    `);
+  });
 }
 
 function syncWaPipSession() {

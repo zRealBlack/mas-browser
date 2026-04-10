@@ -47,6 +47,8 @@ function createWindow(incognito = false) {
 }
 
 
+const WA_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
 // Ensure ALL webviews and windows open in tabs + context menu
 app.on('web-contents-created', (event, contents) => {
   contents.setWindowOpenHandler(({ url }) => {
@@ -57,13 +59,17 @@ app.on('web-contents-created', (event, contents) => {
     return { action: 'deny' };
   });
 
-  // Fix WhatsApp Browser Support
+  // Override user agent for WhatsApp Web
   contents.on('did-start-navigation', (e, url) => {
-    if (url && url.includes('web.whatsapp.com')) {
-      contents.setUserAgent(
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-      );
+    if (url && url.includes('whatsapp.com')) {
+      contents.setUserAgent(WA_UA);
     }
+  });
+
+  // Also handle before the request is sent (covers initial load)
+  contents.session.webRequest.onBeforeSendHeaders({ urls: ['*://*.whatsapp.com/*'] }, (details, callback) => {
+    details.requestHeaders['User-Agent'] = WA_UA;
+    callback({ requestHeaders: details.requestHeaders });
   });
 
   // Relay context menu data to renderer
@@ -172,6 +178,12 @@ app.whenReady().then(() => {
   });
 
   session.defaultSession.setPermissionRequestHandler((_, __, cb) => cb(true));
+
+  // WhatsApp Web user agent override at session level
+  session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['*://*.whatsapp.com/*'] }, (details, callback) => {
+    details.requestHeaders['User-Agent'] = WA_UA;
+    callback({ requestHeaders: details.requestHeaders });
+  });
 
   // --- DOWNLOAD MANAGEMENT (GLOBAL) ---
   const activeDownloads = new Map();

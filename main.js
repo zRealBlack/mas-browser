@@ -57,6 +57,15 @@ app.on('web-contents-created', (event, contents) => {
     return { action: 'deny' };
   });
 
+  // Fix WhatsApp Browser Support
+  contents.on('did-start-navigation', (e, url) => {
+    if (url && url.includes('web.whatsapp.com')) {
+      contents.setUserAgent(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+      );
+    }
+  });
+
   // Relay context menu data to renderer
   contents.on('context-menu', (event, params) => {
     const wins = BrowserWindow.getAllWindows();

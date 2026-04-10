@@ -90,6 +90,16 @@ function toUrl(s) { s = s.trim(); if (/^https?:\/\//i.test(s)) return s; if (isU
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
 
+const WHATSAPP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+function setUAForUrl(wv, url) {
+  if (url && url.includes('web.whatsapp.com')) {
+    wv.setAttribute('useragent', WHATSAPP_UA);
+  } else {
+    wv.removeAttribute('useragent');
+  }
+}
+
 function recordHistory(title, url, favicon) {
   if (!url || url.startsWith('about:') || isIncognito) return;
   // Remove duplicate
@@ -737,7 +747,9 @@ function createTab(url, opts = {}) {
     if (window.__webviewPreloadPath) {
        wv.setAttribute('preload', window.__webviewPreloadPath);
     }
-    wv.src = toUrl(url);
+    const finalUrl = toUrl(url);
+    setUAForUrl(wv, finalUrl);
+    wv.src = finalUrl;
     wireWebview(wv, id);
     webviewWrap.appendChild(wv);
   }
@@ -826,10 +838,12 @@ function navigateTab(id, input) {
     wv.id = `wv-${id}`;
     wv.setAttribute('allowpopups', '');
     wv.setAttribute('partition', getPartition());
+    setUAForUrl(wv, url);
     wv.src = url;
     wireWebview(wv, id);
     webviewWrap.appendChild(wv);
   } else {
+    setUAForUrl(wv, url);
     wv.loadURL(url);
   }
 

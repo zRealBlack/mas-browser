@@ -75,6 +75,11 @@ const dlOverlay = $('#downloads-overlay');
 const btnProfileActive = $('#btn-profile-active');
 const historyOverlay = $('#history-overlay');
 const historyList = $('#history-list');
+const waWidget = $('#wa-widget');
+const waBadge = $('#wa-badge');
+const waReturnBtn = $('#wa-return-btn');
+const waCloseBtn = $('#wa-close-btn');
+const waWidgetIcon = $('#wa-widget-icon');
 
 // ── Helpers ───────────────────────────────────────────
 function genId() { return `t${++tabIdCounter}`; }
@@ -1215,6 +1220,116 @@ window.electronAPI.onWebviewContextMenu((e, data) => {
   showCtxMenu(ev, items);
 });
 
+
+// ── WhatsApp Floating Widget ──────────────────────────
+let waPinnedTabId = null;
+let waIsDragging = false;
+let waDragOffset = { x: 0, y: 0 };
+
+function initWhatsAppWidget() {
+  // Restore position
+  const pos = JSON.parse(localStorage.getItem('mas-wa-pos') || '{"bottom":"24px","right":"24px"}');
+  Object.assign(waWidget.style, pos);
+
+  // Drag logic
+  waWidget.addEventListener('mousedown', e => {
+    if (e.target.closest('button')) return;
+    waIsDragging = true;
+    waDragOffset.x = e.clientX - waWidget.getBoundingClientRect().left;
+    waDragOffset.y = e.clientY - waWidget.getBoundingClientRect().top;
+    waWidget.style.transition = 'none';
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!waIsDragging) return;
+    const x = e.clientX - waDragOffset.x;
+    const y = e.clientY - waDragOffset.y;
+    // Keep in screen bounds roughly
+    const rx = window.innerWidth - (x + waWidget.offsetWidth);
+    const by = window.innerHeight - (y + waWidget.offsetHeight);
+    waWidget.style.left = 'auto';
+    waWidget.style.top = 'auto';
+    waWidget.style.right = Math.max(10, rx) + 'px';
+    waWidget.style.bottom = Math.max(10, by) + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!waIsDragging) return;
+    waIsDragging = false;
+    waWidget.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+    // Save position
+    localStorage.setItem('mas-wa-pos', JSON.stringify({
+      bottom: waWidget.style.bottom,
+      right: waWidget.style.right
+    }));
+  });
+
+  // Toggle expand on icon click
+  waWidgetIcon.addEventListener('click', () => {
+    waWidget.classList.toggle('expanded');
+  });
+
+  waReturnBtn.addEventListener('click', () => {
+    if (waPinnedTabId) switchTab(waPinnedTabId);
+    waWidget.classList.remove('expanded');
+  });
+
+  waCloseBtn.addEventListener('click', () => {
+    waWidget.classList.add('hidden');
+  });
+}
+
+function updateWhatsAppStatus() {
+  if (isIncognito) return;
+  
+  const waTab = tabs.find(t => t.url && t.url.includes('web.whatsapp.com'));
+  if (!waTab) {
+    waWidget.classList.add('hidden');
+    waPinnedTabId = null;
+    return;
+  }
+
+  waPinnedTabId = waTab.id;
+
+  // Show if not on the WA tab
+  if (activeTabId !== waPinnedTabId) {
+    waWidget.classList.remove('hidden');
+  } else {
+    waWidget.classList.add('hidden');
+    waWidget.classList.remove('expanded');
+  }
+
+  // Notification Badge
+  const title = waTab.title || '';
+  const match = title.match(/\((\d+)\)/);
+  if (match && match[1] !== '0') {
+    waBadge.classList.remove('hidden');
+    waBadge.textContent = ''; // Just a red dot for now as requested
+  } else {
+    waBadge.classList.add('hidden');
+  }
+}
+
+// Hook into existing lifecycle
+const originalUpdateMeta = updateMeta;
+updateMeta = function(id, info) {
+  originalUpdateMeta(id, info);
+  updateWhatsAppStatus();
+};
+
+const originalSwitchTab = switchTab;
+switchTab = function(id) {
+  originalSwitchTab(id);
+  updateWhatsAppStatus();
+};
+
+const originalCloseTab = closeTab;
+closeTab = function(id) {
+  originalCloseTab(id);
+  updateWhatsAppStatus();
+};
+
+initWhatsAppWidget();
 
 // ── Boot ──────────────────────────────────────────────
 applyTheme();

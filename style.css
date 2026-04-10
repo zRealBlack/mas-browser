@@ -2420,8 +2420,8 @@ body.platform-mac #sidebar {
 }
 #wa-widget:active { cursor: grabbing; }
 #wa-widget.expanded {
-  width: 200px;
-  height: 110px;
+  width: 380px;
+  height: 520px;
   border-radius: 16px;
   padding: 0;
   flex-direction: column;

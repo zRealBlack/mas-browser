@@ -77,7 +77,8 @@ const historyOverlay = $('#history-overlay');
 const historyList = $('#history-list');
 const waWidget = $('#wa-widget');
 const waBadge = $('#wa-badge');
-const waReturnBtn = $('#wa-return-btn');
+const waPipWebview = $('#wa-pip-webview');
+const waPopoutBtn = $('#wa-popout-btn');
 const waCloseBtn = $('#wa-close-btn');
 const waWidgetIcon = $('#wa-widget-icon');
 
@@ -1247,7 +1248,7 @@ function initWhatsAppWidget() {
 
   // Drag logic
   waWidget.addEventListener('mousedown', e => {
-    if (e.target.closest('button')) return;
+    if (e.target.closest('button') || e.target.closest('webview')) return;
     waIsDragging = true;
     waDragOffset.x = e.clientX - waWidget.getBoundingClientRect().left;
     waDragOffset.y = e.clientY - waWidget.getBoundingClientRect().top;
@@ -1280,10 +1281,11 @@ function initWhatsAppWidget() {
 
   // Toggle expand on icon click
   waWidgetIcon.addEventListener('click', () => {
+    syncWaPipSession();
     waWidget.classList.toggle('expanded');
   });
 
-  waReturnBtn.addEventListener('click', () => {
+  waPopoutBtn.addEventListener('click', () => {
     if (waPinnedTabId) switchTab(waPinnedTabId);
     waWidget.classList.remove('expanded');
   });
@@ -1291,6 +1293,19 @@ function initWhatsAppWidget() {
   waCloseBtn.addEventListener('click', () => {
     waWidget.classList.add('hidden');
   });
+}
+
+function syncWaPipSession() {
+  const waTab = tabs.find(t => t.url && t.url.includes('web.whatsapp.com'));
+  if (waTab && waPipWebview) {
+    const wv = document.getElementById(`wv-${waTab.id}`);
+    if (wv) {
+      const partition = wv.getAttribute('partition') || 'persist:default';
+      if (waPipWebview.getAttribute('partition') !== partition) {
+        waPipWebview.setAttribute('partition', partition);
+      }
+    }
+  }
 }
 
 function updateWhatsAppStatus() {

@@ -50,9 +50,11 @@ let waStreamInterval = null;
 
 function getWaWebContents() {
   const { webContents } = require('electron');
-  return webContents.getAllWebContents().find(wc => 
-    wc.getURL && wc.getURL().includes('whatsapp.com')
-  );
+  const all = webContents.getAllWebContents();
+  // console.log('All webContents URLs:', all.map(wc => { try { return wc.getURL(); } catch(e) { return 'error'; } }));
+  return all.find(wc => {
+    try { return wc.getURL().includes('whatsapp.com'); } catch(e) { return false; }
+  });
 }
 
 function startWaStream() {
@@ -64,7 +66,10 @@ function startWaStream() {
     const wc = getWaWebContents();
     if (!wc || wc.isDestroyed()) return;
     try {
-      const image = await wc.capturePage();
+      const size = wc.getOwnerBrowserWindow()?.getContentSize() || [1280, 860];
+      const image = await wc.capturePage({ x: 0, y: 0, width: size[0], height: size[1] });
+      if (image.isEmpty()) return;
+      
       const dataUrl = image.toDataURL();
       if (mainWin && !mainWin.isDestroyed()) {
         mainWin.webContents.send('wa-pip-frame', dataUrl);

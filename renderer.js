@@ -771,9 +771,29 @@ function switchTab(id) {
 
 
   activeTabId = id;
-  let wv = document.getElementById(`wv-${id}`);
-  if (wv) {
-    wv.classList.add('active');
+  webviewWrap.querySelectorAll('webview').forEach(wv => {
+    const isWa = wv.src && wv.src.includes('whatsapp.com');
+    if (wv.id === `wv-${id}`) {
+        wv.classList.add('active');
+        wv.style.left = '0';
+        wv.style.position = 'absolute';
+    } else {
+        wv.classList.remove('active');
+        if (isWa) {
+            // Keep WA "visible" for capturePage but move off-screen
+            wv.style.position = 'absolute';
+            wv.style.left = '-99999px';
+            wv.style.display = 'flex'; // override display:none from CSS
+        } else {
+            wv.style.left = '0';
+            wv.style.position = 'absolute';
+            wv.style.display = ''; // back to CSS default (none)
+        }
+    }
+  });
+
+  let activeWv = document.getElementById(`wv-${id}`);
+  if (activeWv) {
     newtabPage.classList.remove('active');
   } else {
     newtabPage.classList.add('active');
@@ -1244,18 +1264,24 @@ const waPopoutBtn = $('#wa-popout-btn');
 const waPipCanvas = $('#wa-pip-canvas');
 const waPipCtx = waPipCanvas ? waPipCanvas.getContext('2d') : null;
 
+function resizePipCanvas() {
+  if (!waPipCanvas || !waPipCtx) return;
+  const rect = waPipCanvas.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return;
+  waPipCanvas.width = rect.width * window.devicePixelRatio;
+  waPipCanvas.height = rect.height * window.devicePixelRatio;
+  // waPipCtx.scale(window.devicePixelRatio, window.devicePixelRatio); // Not needed if we use drawImage with exact canvas dims
+}
+
 function startPipStream() {
   if (waStreaming) return;
   waStreaming = true;
   window.electronAPI.waPipStart();
   window.electronAPI.onWaPipFrame((dataUrl) => {
-    if (!waPipCanvas || !waPipCtx) return;
+    if (!waPipCanvas || !waPipCtx || !dataUrl) return;
     const img = new Image();
     img.onload = () => {
-      // Match canvas resolution to its display size
-      const rect = waPipCanvas.getBoundingClientRect();
-      waPipCanvas.width = rect.width * window.devicePixelRatio;
-      waPipCanvas.height = rect.height * window.devicePixelRatio;
+      waPipCtx.clearRect(0, 0, waPipCanvas.width, waPipCanvas.height);
       waPipCtx.drawImage(img, 0, 0, waPipCanvas.width, waPipCanvas.height);
     };
     img.src = dataUrl;
@@ -1368,7 +1394,10 @@ function initWhatsAppWidget() {
     const expanding = !waWidget.classList.contains('expanded');
     waWidget.classList.toggle('expanded');
     if (expanding) {
-      startPipStream();
+      setTimeout(() => {
+        resizePipCanvas();
+        startPipStream();
+      }, 150);
     } else {
       stopPipStream();
     }

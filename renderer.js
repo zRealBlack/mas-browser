@@ -1297,9 +1297,42 @@ function initWhatsAppWidget() {
   // Inject CSS to clean up WA interface
   waPipWebview.addEventListener('dom-ready', () => {
     waPipWebview.insertCSS(`
+      /* Hide download app banner and intro logos */
+      [data-testid="intro-md-beta-logo-dark"],
+      [data-testid="intro-md-beta-logo-light"],
+      .x1y332i5,
+      ._3uMse,
+      [href*="download"],
+      a[href*="windows"],
+      a[href*="mac"] { display: none !important; }
+
+      /* Hide the inactive/background overlay */
       [data-testid="wa-web-browser-inactive-overlay"] { display: none !important; }
-      ._3uMse { display: none !important; }
-      .x1y332i5 { display: none !important; }
+
+      /* Force the main app wrapper to fill height */
+      #app, .app-wrapper-web, ._2Uo9A { 
+        height: 100vh !important; 
+        max-height: 100vh !important;
+      }
+    `);
+
+    // Remove overlays via JS for extra reliability
+    waPipWebview.executeJavaScript(`
+      document.querySelectorAll('[data-testid="wa-web-browser-inactive-overlay"]')
+        .forEach(el => el.remove());
+    `);
+  });
+
+  // Auto-reload if chat list fails to appear
+  waPipWebview.addEventListener('did-finish-load', () => {
+    waPipWebview.executeJavaScript(`
+      if (!document.querySelector('#app [data-testid="chat-list"]')) {
+        setTimeout(() => {
+           if (!document.querySelector('#app [data-testid="chat-list"]')) {
+             location.reload();
+           }
+        }, 3000);
+      }
     `);
   });
 }

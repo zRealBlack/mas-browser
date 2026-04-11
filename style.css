@@ -2421,7 +2421,7 @@ body.platform-mac #sidebar {
 #wa-widget:active { cursor: grabbing; }
 #wa-widget.expanded {
   width: 420px;
-  height: 620px;
+  height: 640px;
   border-radius: 20px;
   padding: 0;
   display: flex;
@@ -2461,6 +2461,7 @@ body.platform-mac #sidebar {
   opacity: 0;
   transition: opacity 0.3s ease;
   overflow: hidden;
+  min-height: 0;
 }
 #wa-widget.expanded #wa-content {
   display: flex;

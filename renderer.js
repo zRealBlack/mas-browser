@@ -1281,8 +1281,11 @@ function initWhatsAppWidget() {
 
   // Toggle expand on icon click
   waWidgetIcon.addEventListener('click', () => {
-    syncWaPipSession();
+    const wasExpanded = waWidget.classList.contains('expanded');
     waWidget.classList.toggle('expanded');
+    if (!wasExpanded) {
+      rebuildPipWebview();
+    }
   });
 
   waPopoutBtn.addEventListener('click', () => {
@@ -1293,61 +1296,44 @@ function initWhatsAppWidget() {
   waCloseBtn.addEventListener('click', () => {
     waWidget.classList.add('hidden');
   });
-
-  // Inject CSS to clean up WA interface
-  waPipWebview.addEventListener('dom-ready', () => {
-    waPipWebview.insertCSS(`
-      /* Hide download app banner and intro logos */
-      [data-testid="intro-md-beta-logo-dark"],
-      [data-testid="intro-md-beta-logo-light"],
-      .x1y332i5,
-      ._3uMse,
-      [href*="download"],
-      a[href*="windows"],
-      a[href*="mac"] { display: none !important; }
-
-      /* Hide the inactive/background overlay */
-      [data-testid="wa-web-browser-inactive-overlay"] { display: none !important; }
-
-      /* Force the main app wrapper to fill height */
-      #app, .app-wrapper-web, ._2Uo9A { 
-        height: 100vh !important; 
-        max-height: 100vh !important;
-      }
-    `);
-
-    // Remove overlays via JS for extra reliability
-    waPipWebview.executeJavaScript(`
-      document.querySelectorAll('[data-testid="wa-web-browser-inactive-overlay"]')
-        .forEach(el => el.remove());
-    `);
-  });
-
-  // Auto-reload if chat list fails to appear
-  waPipWebview.addEventListener('did-finish-load', () => {
-    waPipWebview.executeJavaScript(`
-      if (!document.querySelector('#app [data-testid="chat-list"]')) {
-        setTimeout(() => {
-           if (!document.querySelector('#app [data-testid="chat-list"]')) {
-             location.reload();
-           }
-        }, 3000);
-      }
-    `);
-  });
 }
 
-function syncWaPipSession() {
+function rebuildPipWebview() {
   const waTab = tabs.find(t => t.url && t.url.includes('web.whatsapp.com'));
-  if (waTab && waPipWebview) {
-    const wv = document.getElementById(`wv-${waTab.id}`);
-    if (wv) {
-      const partition = wv.getAttribute('partition') || 'persist:default';
-      if (waPipWebview.getAttribute('partition') !== partition) {
-        waPipWebview.setAttribute('partition', partition);
-      }
-    }
-  }
+  const wvTarget = waTab ? document.getElementById(`wv-${waTab.id}`) : null;
+  const partition = wvTarget ? (wvTarget.getAttribute('partition') || 'persist:default') : 'persist:default';
+
+  const container = document.querySelector('.wa-body');
+  const old = document.getElementById('wa-pip-webview');
+  if (old) old.remove();
+
+  const newWv = document.createElement('webview');
+  newWv.id = 'wa-pip-webview';
+  newWv.src = 'https://web.whatsapp.com';
+  newWv.setAttribute('partition', partition);
+  newWv.setAttribute('useragent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+  newWv.setAttribute('allowpopups', '');
+  newWv.style.cssText = 'width:100%;height:100%;border:none;flex:1;display:block;';
+
+  newWv.addEventListener('dom-ready', () => {
+    newWv.insertCSS(`
+      * { box-sizing: border-box; }
+      body, html { margin: 0; padding: 0; overflow: hidden !important; width: 100% !important; }
+      #app { height: 100vh !important; overflow: hidden !important; }
+      [data-testid="wa-web-browser-inactive-overlay"] { display: none !important; }
+      ._3uMse, .x1y332i5, [href*="windows.net"], a[href*="download"] { display: none !important; }
+    `);
+    newWv.executeJavaScript(`
+      document.querySelectorAll('[data-testid="wa-web-browser-inactive-overlay"]').forEach(e => e.remove());
+    `);
+  });
+
+  container.appendChild(newWv);
+  
+  // After appending:
+  const headerH = document.querySelector('#wa-widget .wa-header')?.offsetHeight || 44;
+  newWv.style.height = (640 - headerH) + 'px';
+  newWv.style.minHeight = (640 - headerH) + 'px';
 }
 
 function updateWhatsAppStatus() {

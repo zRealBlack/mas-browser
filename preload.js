@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   waPipMouse: (data) => ipcRenderer.send('wa-pip-mouse', data),
   waPipKey: (data) => ipcRenderer.send('wa-pip-key', data),
   waPipScroll: (data) => ipcRenderer.send('wa-pip-scroll', data),
+  waPipZoom: (factor) => ipcRenderer.send('wa-pip-zoom', factor),
   onWaPipFrame: (cb) => ipcRenderer.on('wa-pip-frame', (e, dataUrl) => cb(dataUrl)),
   offWaPipFrame: () => ipcRenderer.removeAllListeners('wa-pip-frame'),
 });

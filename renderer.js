@@ -788,14 +788,13 @@ function switchTab(id) {
     } else {
         wv.classList.remove('active');
         if (isWa) {
-            // Keep WA webview at position 0,0 so Electron renders it for capturePage.
-            // Hide it VISUALLY using z-index and opacity — NOT by moving off-screen.
-            // Moving to -99999px stops Electron from rendering pixels → black screen.
+            // Set WA webview to exactly the pip canvas content area (420x590).
+            // This makes WhatsApp reflow to that size — capture is then 1:1 with the pip.
             wv.style.position = 'absolute';
             wv.style.left = '0';
             wv.style.top = '0';
-            wv.style.width = '100%';
-            wv.style.height = '100%';
+            wv.style.width = '420px';
+            wv.style.height = '590px';
             wv.style.display = 'flex';
             wv.style.zIndex = '-1';
             wv.style.opacity = '0';
@@ -1294,7 +1293,10 @@ function resizePipCanvas() {
 function startPipStream() {
   if (waStreaming) return;
   waStreaming = true;
+  // WA webview is already forced to 420x590 in switchTab.
+  // Start streaming — main captures the full webview (no clip rect needed).
   window.electronAPI.waPipStart();
+
   window.electronAPI.onWaPipFrame((dataUrl) => {
     if (!waPipCanvas || !waPipCtx || !dataUrl) return;
     const img = new Image();
@@ -1313,18 +1315,14 @@ function stopPipStream() {
   window.electronAPI.offWaPipFrame();
 }
 
-// Scale pip canvas coordinates back to real WA webContents coordinates
 function pipToWaCoords(canvasX, canvasY) {
-  const waWv = waPinnedTabId ? document.getElementById(`wv-${waPinnedTabId}`) : null;
-  if (!waWv) return { x: canvasX, y: canvasY };
+  if (!waPipCanvas) return { x: canvasX, y: canvasY };
   const rect = waPipCanvas.getBoundingClientRect();
-  const waRect = waWv.getBoundingClientRect();
-  // WA webview actual dimensions
-  const scaleX = waRect.width / rect.width;
-  const scaleY = waRect.height / rect.height;
+  const scaleX = waPipCanvas.width / rect.width;
+  const scaleY = waPipCanvas.height / rect.height;
   return {
-    x: Math.round(canvasX * scaleX),
-    y: Math.round(canvasY * scaleY)
+    x: Math.round(canvasX * scaleX / window.devicePixelRatio),
+    y: Math.round(canvasY * scaleY / window.devicePixelRatio)
   };
 }
 
@@ -1467,6 +1465,7 @@ function updateWhatsAppStatus() {
   } else {
     waWidget.classList.add('hidden');
     waWidget.classList.remove('expanded');
+    // stopPipStream calls waPipStop which resets zoom in main process (fallback safety)
     stopPipStream();
   }
   const title = waTab.title || '';

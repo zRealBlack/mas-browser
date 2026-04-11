@@ -66,16 +66,16 @@ function startWaStream() {
     const wc = getWaWebContents();
     if (!wc || wc.isDestroyed()) return;
     try {
-      // Use a consistent capture size or the current view size if possible
+      // WA webview is already sized to the pip canvas (420x590) via the renderer.
+      // capturePage() with no rect captures exactly that area — no cropping, no scaling.
       const image = await wc.capturePage();
       if (image.isEmpty()) return;
-      
       const dataUrl = image.toDataURL();
       if (mainWin && !mainWin.isDestroyed()) {
         mainWin.webContents.send('wa-pip-frame', dataUrl);
       }
     } catch(e) {}
-  }, 40); // ~25 FPS for smoother experience
+  }, 40);
 }
 
 function stopWaStream() {
@@ -149,6 +149,17 @@ app.whenReady().then(() => {
 
   ipcMain.on('wa-pip-stop', () => {
     stopWaStream();
+    // Restore normal zoom when pip closes
+    const wc = getWaWebContents();
+    if (wc && !wc.isDestroyed()) wc.setZoomFactor(1);
+  });
+
+  // Ctrl+/- zoom from the pip canvas
+  ipcMain.on('wa-pip-zoom', (e, factor) => {
+    const wc = getWaWebContents();
+    if (wc && !wc.isDestroyed()) {
+      wc.setZoomFactor(Math.min(Math.max(factor, 0.3), 3.0));
+    }
   });
 
   ipcMain.on('wa-pip-mouse', (e, data) => {

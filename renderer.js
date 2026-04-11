@@ -75,12 +75,6 @@ const dlOverlay = $('#downloads-overlay');
 const btnProfileActive = $('#btn-profile-active');
 const historyOverlay = $('#history-overlay');
 const historyList = $('#history-list');
-const waWidget = $('#wa-widget');
-const waBadge = $('#wa-badge');
-const waPipWebview = $('#wa-pip-webview');
-const waPopoutBtn = $('#wa-popout-btn');
-const waCloseBtn = $('#wa-close-btn');
-const waWidgetIcon = $('#wa-widget-icon');
 
 // ── Helpers ───────────────────────────────────────────
 function genId() { return `t${++tabIdCounter}`; }
@@ -1236,19 +1230,112 @@ window.electronAPI.onWebviewContextMenu((e, data) => {
 });
 
 
-// ── WhatsApp Floating Widget ──────────────────────────
+// ── WhatsApp PiP Stream ───────────────────────────────
 let waPinnedTabId = null;
 let waIsDragging = false;
 let waDragOffset = { x: 0, y: 0 };
+let waStreaming = false;
+
+const waWidget = $('#wa-widget');
+const waBadge = $('#wa-badge');
+const waCloseBtn = $('#wa-close-btn');
+const waWidgetIcon = $('#wa-widget-icon');
+const waPopoutBtn = $('#wa-popout-btn');
+const waPipCanvas = $('#wa-pip-canvas');
+const waPipCtx = waPipCanvas ? waPipCanvas.getContext('2d') : null;
+
+function startPipStream() {
+  if (waStreaming) return;
+  waStreaming = true;
+  window.electronAPI.waPipStart();
+  window.electronAPI.onWaPipFrame((dataUrl) => {
+    if (!waPipCanvas || !waPipCtx) return;
+    const img = new Image();
+    img.onload = () => {
+      // Match canvas resolution to its display size
+      const rect = waPipCanvas.getBoundingClientRect();
+      waPipCanvas.width = rect.width * window.devicePixelRatio;
+      waPipCanvas.height = rect.height * window.devicePixelRatio;
+      waPipCtx.drawImage(img, 0, 0, waPipCanvas.width, waPipCanvas.height);
+    };
+    img.src = dataUrl;
+  });
+}
+
+function stopPipStream() {
+  if (!waStreaming) return;
+  waStreaming = false;
+  window.electronAPI.waPipStop();
+  window.electronAPI.offWaPipFrame();
+}
+
+// Scale pip canvas coordinates back to real WA webContents coordinates
+function pipToWaCoords(canvasX, canvasY) {
+  const waWv = waPinnedTabId ? document.getElementById(`wv-${waPinnedTabId}`) : null;
+  if (!waWv) return { x: canvasX, y: canvasY };
+  const rect = waPipCanvas.getBoundingClientRect();
+  const waRect = waWv.getBoundingClientRect();
+  // WA webview actual dimensions
+  const scaleX = waRect.width / rect.width;
+  const scaleY = waRect.height / rect.height;
+  return {
+    x: Math.round(canvasX * scaleX),
+    y: Math.round(canvasY * scaleY)
+  };
+}
+
+// Mouse events on canvas → forward to WA
+if (waPipCanvas) {
+  waPipCanvas.addEventListener('mousedown', e => {
+    const r = waPipCanvas.getBoundingClientRect();
+    const coords = pipToWaCoords(e.clientX - r.left, e.clientY - r.top);
+    window.electronAPI.waPipMouse({ type: 'mouseDown', ...coords, button: 'left', clickCount: 1 });
+  });
+
+  waPipCanvas.addEventListener('mouseup', e => {
+    const r = waPipCanvas.getBoundingClientRect();
+    const coords = pipToWaCoords(e.clientX - r.left, e.clientY - r.top);
+    window.electronAPI.waPipMouse({ type: 'mouseUp', ...coords, button: 'left', clickCount: 1 });
+  });
+
+  waPipCanvas.addEventListener('mousemove', e => {
+    const r = waPipCanvas.getBoundingClientRect();
+    const coords = pipToWaCoords(e.clientX - r.left, e.clientY - r.top);
+    window.electronAPI.waPipMouse({ type: 'mouseMove', ...coords });
+  });
+
+  waPipCanvas.addEventListener('wheel', e => {
+    const r = waPipCanvas.getBoundingClientRect();
+    const coords = pipToWaCoords(e.clientX - r.left, e.clientY - r.top);
+    window.electronAPI.waPipScroll({ ...coords, deltaY: -e.deltaY });
+    e.preventDefault();
+  }, { passive: false });
+
+  waPipCanvas.addEventListener('click', e => {
+    waPipCanvas.focus();
+  });
+
+  waPipCanvas.setAttribute('tabindex', '0');
+  waPipCanvas.addEventListener('keydown', e => {
+    // Only forward if expanded to avoid accidental triggers
+    if (!waWidget.classList.contains('expanded')) return;
+    window.electronAPI.waPipKey({ type: 'keyDown', keyCode: e.key });
+    window.electronAPI.waPipKey({ type: 'char', keyCode: e.key });
+    e.preventDefault();
+  });
+
+  waPipCanvas.addEventListener('keyup', e => {
+    if (!waWidget.classList.contains('expanded')) return;
+    window.electronAPI.waPipKey({ type: 'keyUp', keyCode: e.key });
+  });
+}
 
 function initWhatsAppWidget() {
-  // Restore position
   const pos = JSON.parse(localStorage.getItem('mas-wa-pos') || '{"bottom":"24px","right":"24px"}');
   Object.assign(waWidget.style, pos);
 
-  // Drag logic
   waWidget.addEventListener('mousedown', e => {
-    if (e.target.closest('button') || e.target.closest('webview')) return;
+    if (e.target.closest('button') || e.target === waPipCanvas) return;
     waIsDragging = true;
     waDragOffset.x = e.clientX - waWidget.getBoundingClientRect().left;
     waDragOffset.y = e.clientY - waWidget.getBoundingClientRect().top;
@@ -1259,7 +1346,6 @@ function initWhatsAppWidget() {
     if (!waIsDragging) return;
     const x = e.clientX - waDragOffset.x;
     const y = e.clientY - waDragOffset.y;
-    // Keep in screen bounds roughly
     const rx = window.innerWidth - (x + waWidget.offsetWidth);
     const by = window.innerHeight - (y + waWidget.offsetHeight);
     waWidget.style.left = 'auto';
@@ -1272,102 +1358,64 @@ function initWhatsAppWidget() {
     if (!waIsDragging) return;
     waIsDragging = false;
     waWidget.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
-    // Save position
     localStorage.setItem('mas-wa-pos', JSON.stringify({
       bottom: waWidget.style.bottom,
       right: waWidget.style.right
     }));
   });
 
-  // Toggle expand on icon click
   waWidgetIcon.addEventListener('click', () => {
-    const wasExpanded = waWidget.classList.contains('expanded');
+    const expanding = !waWidget.classList.contains('expanded');
     waWidget.classList.toggle('expanded');
-    if (!wasExpanded) {
-      rebuildPipWebview();
+    if (expanding) {
+      startPipStream();
+    } else {
+      stopPipStream();
     }
   });
 
-  waPopoutBtn.addEventListener('click', () => {
-    if (waPinnedTabId) switchTab(waPinnedTabId);
-    waWidget.classList.remove('expanded');
-  });
+  if (waPopoutBtn) {
+    waPopoutBtn.addEventListener('click', () => {
+      if (waPinnedTabId) switchTab(waPinnedTabId);
+      waWidget.classList.remove('expanded');
+      stopPipStream();
+    });
+  }
 
   waCloseBtn.addEventListener('click', () => {
     waWidget.classList.add('hidden');
+    waWidget.classList.remove('expanded');
+    stopPipStream();
   });
-}
-
-function rebuildPipWebview() {
-  const waTab = tabs.find(t => t.url && t.url.includes('web.whatsapp.com'));
-  const wvTarget = waTab ? document.getElementById(`wv-${waTab.id}`) : null;
-  const partition = wvTarget ? (wvTarget.getAttribute('partition') || 'persist:default') : 'persist:default';
-
-  const container = document.querySelector('.wa-body');
-  const old = document.getElementById('wa-pip-webview');
-  if (old) old.remove();
-
-  const newWv = document.createElement('webview');
-  newWv.id = 'wa-pip-webview';
-  newWv.src = 'https://web.whatsapp.com';
-  newWv.setAttribute('partition', partition);
-  newWv.setAttribute('useragent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
-  newWv.setAttribute('allowpopups', '');
-  newWv.style.cssText = 'width:100%;height:100%;border:none;flex:1;display:block;';
-
-  newWv.addEventListener('dom-ready', () => {
-    newWv.insertCSS(`
-      * { box-sizing: border-box; }
-      body, html { margin: 0; padding: 0; overflow: hidden !important; width: 100% !important; }
-      #app { height: 100vh !important; overflow: hidden !important; }
-      [data-testid="wa-web-browser-inactive-overlay"] { display: none !important; }
-      ._3uMse, .x1y332i5, [href*="windows.net"], a[href*="download"] { display: none !important; }
-    `);
-    newWv.executeJavaScript(`
-      document.querySelectorAll('[data-testid="wa-web-browser-inactive-overlay"]').forEach(e => e.remove());
-    `);
-  });
-
-  container.appendChild(newWv);
-  
-  // After appending:
-  const headerH = document.querySelector('#wa-widget .wa-header')?.offsetHeight || 44;
-  newWv.style.height = (640 - headerH) + 'px';
-  newWv.style.minHeight = (640 - headerH) + 'px';
 }
 
 function updateWhatsAppStatus() {
   if (isIncognito) return;
-  
   const waTab = tabs.find(t => t.url && t.url.includes('web.whatsapp.com'));
   if (!waTab) {
     waWidget.classList.add('hidden');
     waPinnedTabId = null;
+    stopPipStream();
     return;
   }
-
   waPinnedTabId = waTab.id;
-
-  // Show if not on the WA tab
   if (activeTabId !== waPinnedTabId) {
     waWidget.classList.remove('hidden');
   } else {
     waWidget.classList.add('hidden');
     waWidget.classList.remove('expanded');
+    stopPipStream();
   }
-
-  // Notification Badge
   const title = waTab.title || '';
   const match = title.match(/\((\d+)\)/);
   if (match && match[1] !== '0') {
     waBadge.classList.remove('hidden');
-    waBadge.textContent = ''; // Just a red dot for now as requested
+    waBadge.textContent = '';
   } else {
     waBadge.classList.add('hidden');
   }
 }
 
-// Hook into existing lifecycle
 const originalUpdateMeta = updateMeta;
 updateMeta = function(id, info) {
   originalUpdateMeta(id, info);

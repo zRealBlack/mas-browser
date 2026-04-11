@@ -36,5 +36,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppPath: () => ipcRenderer.invoke('get-app-path'),
   savePassword: data => ipcRenderer.send('save-password-main', data),
   getPasswords: (domain, profileId) => ipcRenderer.invoke('get-passwords', { domain, profileId }),
+
+  // WhatsApp PiP Stream
+  waPipStart: () => ipcRenderer.send('wa-pip-start'),
+  waPipStop: () => ipcRenderer.send('wa-pip-stop'),
+  waPipMouse: (data) => ipcRenderer.send('wa-pip-mouse', data),
+  waPipKey: (data) => ipcRenderer.send('wa-pip-key', data),
+  waPipScroll: (data) => ipcRenderer.send('wa-pip-scroll', data),
+  onWaPipFrame: (cb) => ipcRenderer.on('wa-pip-frame', (e, dataUrl) => cb(dataUrl)),
+  offWaPipFrame: () => ipcRenderer.removeAllListeners('wa-pip-frame'),
 });
 

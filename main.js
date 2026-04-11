@@ -46,6 +46,40 @@ function createWindow(incognito = false) {
   return win;
 }
 
+let waStreamInterval = null;
+
+function getWaWebContents() {
+  const { webContents } = require('electron');
+  return webContents.getAllWebContents().find(wc => 
+    wc.getURL && wc.getURL().includes('whatsapp.com')
+  );
+}
+
+function startWaStream() {
+  stopWaStream();
+  const wins = BrowserWindow.getAllWindows();
+  const mainWin = wins[0];
+
+  waStreamInterval = setInterval(async () => {
+    const wc = getWaWebContents();
+    if (!wc || wc.isDestroyed()) return;
+    try {
+      const image = await wc.capturePage();
+      const dataUrl = image.toDataURL();
+      if (mainWin && !mainWin.isDestroyed()) {
+        mainWin.webContents.send('wa-pip-frame', dataUrl);
+      }
+    } catch(e) {}
+  }, 100); 
+}
+
+function stopWaStream() {
+  if (waStreamInterval) {
+    clearInterval(waStreamInterval);
+    waStreamInterval = null;
+  }
+}
+
 
 const WA_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
@@ -102,6 +136,48 @@ app.whenReady().then(() => {
   });
   ipcMain.on('win-close', e => BrowserWindow.fromWebContents(e.sender)?.close());
   ipcMain.handle('win-is-maximized', e => BrowserWindow.fromWebContents(e.sender)?.isMaximized() || false);
+
+  // WhatsApp PiP Stream Handlers
+  ipcMain.on('wa-pip-start', (e) => {
+    startWaStream();
+  });
+
+  ipcMain.on('wa-pip-stop', () => {
+    stopWaStream();
+  });
+
+  ipcMain.on('wa-pip-mouse', (e, data) => {
+    const wc = getWaWebContents();
+    if (!wc) return;
+    wc.sendInputEvent({
+      type: data.type, 
+      x: Math.round(data.x),
+      y: Math.round(data.y),
+      button: data.button || 'left',
+      clickCount: data.clickCount || 1
+    });
+  });
+
+  ipcMain.on('wa-pip-key', (e, data) => {
+    const wc = getWaWebContents();
+    if (!wc) return;
+    wc.sendInputEvent({
+      type: data.type, 
+      keyCode: data.keyCode
+    });
+  });
+
+  ipcMain.on('wa-pip-scroll', (e, data) => {
+    const wc = getWaWebContents();
+    if (!wc) return;
+    wc.sendInputEvent({
+      type: 'mouseWheel',
+      x: Math.round(data.x),
+      y: Math.round(data.y),
+      deltaX: 0,
+      deltaY: data.deltaY
+    });
+  });
 
   ipcMain.on('new-window', () => createWindow());
   ipcMain.on('new-incognito', () => createWindow(true));

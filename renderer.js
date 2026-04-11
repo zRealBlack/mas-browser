@@ -774,19 +774,37 @@ function switchTab(id) {
   webviewWrap.querySelectorAll('webview').forEach(wv => {
     const isWa = wv.src && wv.src.includes('whatsapp.com');
     if (wv.id === `wv-${id}`) {
+        // Active tab: fully visible, on top
         wv.classList.add('active');
-        wv.style.left = '0';
         wv.style.position = 'absolute';
+        wv.style.left = '0';
+        wv.style.top = '0';
+        wv.style.width = '100%';
+        wv.style.height = '100%';
+        wv.style.display = 'flex';
+        wv.style.zIndex = '2';
+        wv.style.opacity = '1';
+        wv.style.pointerEvents = 'auto';
     } else {
         wv.classList.remove('active');
         if (isWa) {
-            // Keep WA "visible" for capturePage but move off-screen
+            // Keep WA webview at position 0,0 so Electron renders it for capturePage.
+            // Hide it VISUALLY using z-index and opacity — NOT by moving off-screen.
+            // Moving to -99999px stops Electron from rendering pixels → black screen.
             wv.style.position = 'absolute';
-            wv.style.left = '-99999px';
-            wv.style.display = 'flex'; // override display:none from CSS
-        } else {
             wv.style.left = '0';
-            wv.style.position = 'absolute';
+            wv.style.top = '0';
+            wv.style.width = '100%';
+            wv.style.height = '100%';
+            wv.style.display = 'flex';
+            wv.style.zIndex = '-1';
+            wv.style.opacity = '0';
+            wv.style.pointerEvents = 'none';
+        } else {
+            // Non-WA inactive tabs: hidden
+            wv.style.zIndex = '';
+            wv.style.opacity = '';
+            wv.style.pointerEvents = '';
             wv.style.display = ''; // back to CSS default (none)
         }
     }
@@ -1345,8 +1363,15 @@ if (waPipCanvas) {
   waPipCanvas.addEventListener('keydown', e => {
     // Only forward if expanded to avoid accidental triggers
     if (!waWidget.classList.contains('expanded')) return;
+    
+    // Always send keyDown
     window.electronAPI.waPipKey({ type: 'keyDown', keyCode: e.key });
-    window.electronAPI.waPipKey({ type: 'char', keyCode: e.key });
+    
+    // Send char event for printable characters
+    if (e.key.length === 1) {
+      window.electronAPI.waPipKey({ type: 'char', keyCode: e.key });
+    }
+    
     e.preventDefault();
   });
 
@@ -1403,6 +1428,15 @@ function initWhatsAppWidget() {
     }
   });
 
+  // Minimize button — collapses widget back to icon bubble
+  const waMinimizeBtn = document.getElementById('wa-minimize-btn');
+  if (waMinimizeBtn) {
+    waMinimizeBtn.addEventListener('click', () => {
+      waWidget.classList.remove('expanded');
+      stopPipStream();
+    });
+  }
+
   if (waPopoutBtn) {
     waPopoutBtn.addEventListener('click', () => {
       if (waPinnedTabId) switchTab(waPinnedTabId);
@@ -1439,7 +1473,7 @@ function updateWhatsAppStatus() {
   const match = title.match(/\((\d+)\)/);
   if (match && match[1] !== '0') {
     waBadge.classList.remove('hidden');
-    waBadge.textContent = '';
+    waBadge.textContent = match[1];
   } else {
     waBadge.classList.add('hidden');
   }

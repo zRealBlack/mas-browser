@@ -66,8 +66,8 @@ function startWaStream() {
     const wc = getWaWebContents();
     if (!wc || wc.isDestroyed()) return;
     try {
-      const size = wc.getOwnerBrowserWindow()?.getContentSize() || [1280, 860];
-      const image = await wc.capturePage({ x: 0, y: 0, width: size[0], height: size[1] });
+      // Use a consistent capture size or the current view size if possible
+      const image = await wc.capturePage();
       if (image.isEmpty()) return;
       
       const dataUrl = image.toDataURL();
@@ -75,7 +75,7 @@ function startWaStream() {
         mainWin.webContents.send('wa-pip-frame', dataUrl);
       }
     } catch(e) {}
-  }, 100); 
+  }, 40); // ~25 FPS for smoother experience
 }
 
 function stopWaStream() {

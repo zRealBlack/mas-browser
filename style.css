@@ -2421,11 +2421,14 @@ body.platform-mac #sidebar {
 #wa-widget:active { cursor: grabbing; }
 #wa-widget.expanded {
   width: 420px;
-  height: 640px;
-  border-radius: 20px;
+  height: 50px;  /* Only the header bar — webview is positioned natively below */
+  border-radius: 20px 20px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
+}
+#wa-widget.expanded .wa-body {
+  display: none; /* No canvas body needed — webview is the content */
 }
 #wa-widget-icon {
   position: relative;

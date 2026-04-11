@@ -774,37 +774,46 @@ function switchTab(id) {
   webviewWrap.querySelectorAll('webview').forEach(wv => {
     const isWa = wv.src && wv.src.includes('whatsapp.com');
     if (wv.id === `wv-${id}`) {
-        // Active tab: fully visible, on top
+        // Active tab: fully visible, on top, full size
         wv.classList.add('active');
-        wv.style.position = 'absolute';
-        wv.style.left = '0';
-        wv.style.top = '0';
-        wv.style.width = '100%';
-        wv.style.height = '100%';
-        wv.style.display = 'flex';
-        wv.style.zIndex = '2';
-        wv.style.opacity = '1';
+        wv.style.position    = 'absolute';
+        wv.style.left        = '0';
+        wv.style.top         = '0';
+        wv.style.right       = 'auto';
+        wv.style.bottom      = 'auto';
+        wv.style.width       = '100%';
+        wv.style.height      = '100%';
+        wv.style.display     = 'flex';
+        wv.style.zIndex      = '2';
+        wv.style.opacity     = '1';
         wv.style.pointerEvents = 'auto';
+        wv.style.borderRadius  = '';
+        wv.style.boxShadow     = '';
     } else {
         wv.classList.remove('active');
         if (isWa) {
-            // Set WA webview to exactly the pip canvas content area (420x590).
-            // This makes WhatsApp reflow to that size — capture is then 1:1 with the pip.
-            wv.style.position = 'absolute';
-            wv.style.left = '0';
-            wv.style.top = '0';
-            wv.style.width = '420px';
-            wv.style.height = '590px';
-            wv.style.display = 'flex';
-            wv.style.zIndex = '-1';
-            wv.style.opacity = '0';
+            // Keep WA webview at pos 0,0 inside webview-wrap (so Electron renders it).
+            // Hidden visually with z-index:-1 and opacity:0.
+            // openWaPip() will switch it to position:fixed at the pip coordinates.
+            wv.style.position      = 'absolute';
+            wv.style.left          = '0';
+            wv.style.top           = '0';
+            wv.style.right         = 'auto';
+            wv.style.bottom        = 'auto';
+            wv.style.width         = '420px';
+            wv.style.height        = '590px';
+            wv.style.display       = 'flex';
+            wv.style.zIndex        = '-1';
+            wv.style.opacity       = '0';
             wv.style.pointerEvents = 'none';
+            wv.style.borderRadius  = '';
+            wv.style.boxShadow     = '';
         } else {
             // Non-WA inactive tabs: hidden
-            wv.style.zIndex = '';
-            wv.style.opacity = '';
+            wv.style.zIndex      = '';
+            wv.style.opacity     = '';
             wv.style.pointerEvents = '';
-            wv.style.display = ''; // back to CSS default (none)
+            wv.style.display     = ''; // back to CSS default (none)
         }
     }
   });
@@ -1278,113 +1287,89 @@ const waBadge = $('#wa-badge');
 const waCloseBtn = $('#wa-close-btn');
 const waWidgetIcon = $('#wa-widget-icon');
 const waPopoutBtn = $('#wa-popout-btn');
-const waPipCanvas = $('#wa-pip-canvas');
-const waPipCtx = waPipCanvas ? waPipCanvas.getContext('2d') : null;
 
-function resizePipCanvas() {
-  if (!waPipCanvas || !waPipCtx) return;
-  const rect = waPipCanvas.getBoundingClientRect();
-  if (rect.width === 0 || rect.height === 0) return;
-  waPipCanvas.width = rect.width * window.devicePixelRatio;
-  waPipCanvas.height = rect.height * window.devicePixelRatio;
-  // waPipCtx.scale(window.devicePixelRatio, window.devicePixelRatio); // Not needed if we use drawImage with exact canvas dims
+// — Native WebView PiP — no canvas/streaming needed.
+// We physically reposition the live WA webview using CSS fixed positioning.
+// Quality is native browser quality. Zero latency.
+
+function getWaPipWebview() {
+  return waPinnedTabId ? document.getElementById(`wv-${waPinnedTabId}`) : null;
 }
 
-function startPipStream() {
-  if (waStreaming) return;
-  waStreaming = true;
-  // WA webview is already forced to 420x590 in switchTab.
-  // Start streaming — main captures the full webview (no clip rect needed).
-  window.electronAPI.waPipStart();
+function openWaPip() {
+  const waWv = getWaPipWebview();
+  if (!waWv) return;
 
-  window.electronAPI.onWaPipFrame((dataUrl) => {
-    if (!waPipCanvas || !waPipCtx || !dataUrl) return;
-    const img = new Image();
-    img.onload = () => {
-      waPipCtx.clearRect(0, 0, waPipCanvas.width, waPipCanvas.height);
-      waPipCtx.drawImage(img, 0, 0, waPipCanvas.width, waPipCanvas.height);
-    };
-    img.src = dataUrl;
-  });
+  const wRect = waWidget.getBoundingClientRect();
+  const pipLeft = wRect.left;
+  const pipTop  = wRect.top;
+  const headerH = 50;
+
+  // Convert widget from right/bottom to left/top anchoring during pip
+  waWidget.style.left   = pipLeft + 'px';
+  waWidget.style.top    = pipTop  + 'px';
+  waWidget.style.right  = 'auto';
+  waWidget.style.bottom = 'auto';
+
+  // Switch webview from hidden-absolute to visible-fixed at pip coords
+  waWv.style.position      = 'fixed';
+  waWv.style.left          = pipLeft + 'px';
+  waWv.style.top           = (pipTop + headerH) + 'px';
+  waWv.style.right         = 'auto';
+  waWv.style.bottom        = 'auto';
+  waWv.style.width         = '420px';
+  waWv.style.height        = '590px';
+  waWv.style.opacity       = '1';
+  waWv.style.pointerEvents = 'auto';
+  waWv.style.zIndex        = '998';
+  waWv.style.display       = 'flex';
+  waWv.style.borderRadius  = '0 0 20px 20px';
+  waWv.style.boxShadow     = '0 8px 32px rgba(0,0,0,0.3)';
 }
 
-function stopPipStream() {
-  if (!waStreaming) return;
-  waStreaming = false;
-  window.electronAPI.waPipStop();
-  window.electronAPI.offWaPipFrame();
+function closeWaPip() {
+  const waWv = getWaPipWebview();
+  if (waWv) {
+    // Return webview to hidden-absolute state (inside webview-wrap)
+    waWv.style.position      = 'absolute';
+    waWv.style.left          = '0';
+    waWv.style.top           = '0';
+    waWv.style.right         = 'auto';
+    waWv.style.bottom        = 'auto';
+    waWv.style.width         = '420px';
+    waWv.style.height        = '590px';
+    waWv.style.opacity       = '0';
+    waWv.style.pointerEvents = 'none';
+    waWv.style.zIndex        = '-1';
+    waWv.style.boxShadow     = '';
+    waWv.style.borderRadius  = '';
+  }
+  // Return widget to right/bottom anchoring
+  const wRect = waWidget.getBoundingClientRect();
+  waWidget.style.right  = (window.innerWidth  - wRect.right)  + 'px';
+  waWidget.style.bottom = (window.innerHeight - wRect.bottom) + 'px';
+  waWidget.style.left   = 'auto';
+  waWidget.style.top    = 'auto';
 }
 
-function pipToWaCoords(canvasX, canvasY) {
-  if (!waPipCanvas) return { x: canvasX, y: canvasY };
-  const rect = waPipCanvas.getBoundingClientRect();
-  const scaleX = waPipCanvas.width / rect.width;
-  const scaleY = waPipCanvas.height / rect.height;
-  return {
-    x: Math.round(canvasX * scaleX / window.devicePixelRatio),
-    y: Math.round(canvasY * scaleY / window.devicePixelRatio)
-  };
+function syncPipWebview() {
+  // Called during drag to keep webview in sync with the widget header
+  const waWv = getWaPipWebview();
+  if (!waWv || !waWidget.classList.contains('expanded')) return;
+  const wRect = waWidget.getBoundingClientRect();
+  waWv.style.left = wRect.left + 'px';
+  waWv.style.top  = (wRect.bottom) + 'px'; // directly below header
 }
 
-// Mouse events on canvas → forward to WA
-if (waPipCanvas) {
-  waPipCanvas.addEventListener('mousedown', e => {
-    const r = waPipCanvas.getBoundingClientRect();
-    const coords = pipToWaCoords(e.clientX - r.left, e.clientY - r.top);
-    window.electronAPI.waPipMouse({ type: 'mouseDown', ...coords, button: 'left', clickCount: 1 });
-  });
 
-  waPipCanvas.addEventListener('mouseup', e => {
-    const r = waPipCanvas.getBoundingClientRect();
-    const coords = pipToWaCoords(e.clientX - r.left, e.clientY - r.top);
-    window.electronAPI.waPipMouse({ type: 'mouseUp', ...coords, button: 'left', clickCount: 1 });
-  });
 
-  waPipCanvas.addEventListener('mousemove', e => {
-    const r = waPipCanvas.getBoundingClientRect();
-    const coords = pipToWaCoords(e.clientX - r.left, e.clientY - r.top);
-    window.electronAPI.waPipMouse({ type: 'mouseMove', ...coords });
-  });
-
-  waPipCanvas.addEventListener('wheel', e => {
-    const r = waPipCanvas.getBoundingClientRect();
-    const coords = pipToWaCoords(e.clientX - r.left, e.clientY - r.top);
-    window.electronAPI.waPipScroll({ ...coords, deltaY: -e.deltaY });
-    e.preventDefault();
-  }, { passive: false });
-
-  waPipCanvas.addEventListener('click', e => {
-    waPipCanvas.focus();
-  });
-
-  waPipCanvas.setAttribute('tabindex', '0');
-  waPipCanvas.addEventListener('keydown', e => {
-    // Only forward if expanded to avoid accidental triggers
-    if (!waWidget.classList.contains('expanded')) return;
-    
-    // Always send keyDown
-    window.electronAPI.waPipKey({ type: 'keyDown', keyCode: e.key });
-    
-    // Send char event for printable characters
-    if (e.key.length === 1) {
-      window.electronAPI.waPipKey({ type: 'char', keyCode: e.key });
-    }
-    
-    e.preventDefault();
-  });
-
-  waPipCanvas.addEventListener('keyup', e => {
-    if (!waWidget.classList.contains('expanded')) return;
-    window.electronAPI.waPipKey({ type: 'keyUp', keyCode: e.key });
-  });
-}
 
 function initWhatsAppWidget() {
   const pos = JSON.parse(localStorage.getItem('mas-wa-pos') || '{"bottom":"24px","right":"24px"}');
   Object.assign(waWidget.style, pos);
 
   waWidget.addEventListener('mousedown', e => {
-    if (e.target.closest('button') || e.target === waPipCanvas) return;
+    if (e.target.closest('button')) return;
     waIsDragging = true;
     waDragOffset.x = e.clientX - waWidget.getBoundingClientRect().left;
     waDragOffset.y = e.clientY - waWidget.getBoundingClientRect().top;
@@ -1395,12 +1380,14 @@ function initWhatsAppWidget() {
     if (!waIsDragging) return;
     const x = e.clientX - waDragOffset.x;
     const y = e.clientY - waDragOffset.y;
-    const rx = window.innerWidth - (x + waWidget.offsetWidth);
+    const rx = window.innerWidth  - (x + waWidget.offsetWidth);
     const by = window.innerHeight - (y + waWidget.offsetHeight);
-    waWidget.style.left = 'auto';
-    waWidget.style.top = 'auto';
-    waWidget.style.right = Math.max(10, rx) + 'px';
+    waWidget.style.left   = 'auto';
+    waWidget.style.top    = 'auto';
+    waWidget.style.right  = Math.max(10, rx) + 'px';
     waWidget.style.bottom = Math.max(10, by) + 'px';
+    // Sync the live webview to follow the header during drag
+    syncPipWebview();
   });
 
   document.addEventListener('mouseup', () => {
@@ -1417,12 +1404,9 @@ function initWhatsAppWidget() {
     const expanding = !waWidget.classList.contains('expanded');
     waWidget.classList.toggle('expanded');
     if (expanding) {
-      setTimeout(() => {
-        resizePipCanvas();
-        startPipStream();
-      }, 150);
+      openWaPip();
     } else {
-      stopPipStream();
+      closeWaPip();
     }
   });
 
@@ -1431,7 +1415,7 @@ function initWhatsAppWidget() {
   if (waMinimizeBtn) {
     waMinimizeBtn.addEventListener('click', () => {
       waWidget.classList.remove('expanded');
-      stopPipStream();
+      closeWaPip();
     });
   }
 
@@ -1439,14 +1423,14 @@ function initWhatsAppWidget() {
     waPopoutBtn.addEventListener('click', () => {
       if (waPinnedTabId) switchTab(waPinnedTabId);
       waWidget.classList.remove('expanded');
-      stopPipStream();
+      closeWaPip();
     });
   }
 
   waCloseBtn.addEventListener('click', () => {
     waWidget.classList.add('hidden');
     waWidget.classList.remove('expanded');
-    stopPipStream();
+    closeWaPip();
   });
 }
 
@@ -1463,10 +1447,11 @@ function updateWhatsAppStatus() {
   if (activeTabId !== waPinnedTabId) {
     waWidget.classList.remove('hidden');
   } else {
+    // User switched back to WA tab — close pip, reset webview to full size
     waWidget.classList.add('hidden');
     waWidget.classList.remove('expanded');
-    // stopPipStream calls waPipStop which resets zoom in main process (fallback safety)
-    stopPipStream();
+    closeWaPip();
+    window.electronAPI.waPipZoom(1.0); // reset any Ctrl+/- zoom
   }
   const title = waTab.title || '';
   const match = title.match(/\((\d+)\)/);
